@@ -6,7 +6,7 @@ covers the common single-group shapes; `nodes` takes over for anything else.
 ```hcl
 module "billing" {
   source  = "relay-sh/database/relay"
-  version = "~> 0.1"
+  version = "~> 0.0.1"
 
   workspace_id   = module.workspace.workspace_id
   name           = "billing"
@@ -42,13 +42,13 @@ data. Version upgrades go through Relay's upgrade flow; a plan that changes
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_relay"></a> [relay](#requirement\_relay) | ~> 0.1 |
+| <a name="requirement_relay"></a> [relay](#requirement\_relay) | ~> 0.0.1 |
 
 ## Providers
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_relay"></a> [relay](#provider\_relay) | ~> 0.1 |
+| <a name="provider_relay"></a> [relay](#provider\_relay) | ~> 0.0.1 |
 
 ## Modules
 
