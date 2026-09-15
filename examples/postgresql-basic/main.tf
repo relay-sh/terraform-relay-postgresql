@@ -1,7 +1,4 @@
-provider "relay" {
-  endpoint = "api.staging.userelay.sh:443"
-  org_id   = "00000000-0000-0000-0000-000000000000"
-}
+provider "relay" {}
 
 data "relay_workspace" "prod" {
   name = "prod"
