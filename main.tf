@@ -3,7 +3,6 @@ resource "relay_database" "this" {
   name         = var.name
   engine       = var.engine
   version      = var.engine_version
-  topology     = coalesce(var.topology, local.default_topology[var.engine])
   nodes        = local.nodes
 
   params                  = var.params

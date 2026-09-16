@@ -23,12 +23,6 @@ variable "engine_version" {
   type        = string
 }
 
-variable "topology" {
-  description = "Cluster topology. Defaults to replication for PostgreSQL and replicaset for MongoDB."
-  type        = string
-  default     = null
-}
-
 variable "size" {
   description = "Preset node shape: s, m or l. Set either size or nodes."
   type        = string

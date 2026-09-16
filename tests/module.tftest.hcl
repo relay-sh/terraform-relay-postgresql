@@ -47,11 +47,6 @@ run "size_preset_and_users" {
   }
 
   assert {
-    condition     = relay_database.this.topology == "replication"
-    error_message = "postgresql defaults to replication"
-  }
-
-  assert {
     condition     = relay_database_user.this["app"].generate_password && relay_database_user.this["app"].password == null
     error_message = "a user without a password gets a generated one"
   }
@@ -102,8 +97,8 @@ run "explicit_nodes_for_mongodb" {
   }
 
   assert {
-    condition     = relay_database.this.topology == "replicaset" && relay_database.this.nodes[0].provider == "gcp"
-    error_message = "mongodb defaults to replicaset and explicit nodes pass through"
+    condition     = relay_database.this.nodes[0].provider == "gcp" && relay_database.this.nodes[0].count == 3
+    error_message = "explicit nodes pass through"
   }
 }
 
