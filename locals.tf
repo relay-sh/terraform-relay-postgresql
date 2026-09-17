@@ -5,11 +5,6 @@ locals {
     l = { cpu = "4", memory = "16Gi", storage = "200Gi" }
   }
 
-  default_topology = {
-    postgresql = "replication"
-    mongodb    = "replicaset"
-  }
-
   nodes = var.nodes != null ? var.nodes : [{
     role      = "data"
     count     = var.node_count
