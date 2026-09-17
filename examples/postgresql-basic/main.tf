@@ -9,7 +9,6 @@ module "billing" {
 
   workspace_id   = data.relay_workspace.prod.id
   name           = "billing"
-  engine         = "postgresql"
   engine_version = "17"
   size           = "m"
   node_count     = 2

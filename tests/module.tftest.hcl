@@ -18,7 +18,6 @@ mock_provider "relay" {
 variables {
   workspace_id   = "ws-1"
   name           = "billing"
-  engine         = "postgresql"
   engine_version = "17"
   size           = "m"
   node_count     = 2
@@ -35,6 +34,11 @@ variables {
 
 run "size_preset_and_users" {
   command = apply
+
+  assert {
+    condition     = relay_database.this.engine == "postgresql"
+    error_message = "the cluster is always postgresql"
+  }
 
   assert {
     condition     = length(relay_database.this.nodes) == 1 && relay_database.this.nodes[0].count == 2
@@ -72,12 +76,10 @@ run "size_preset_and_users" {
   }
 }
 
-run "explicit_nodes_for_mongodb" {
+run "explicit_nodes" {
   command = apply
 
   variables {
-    engine         = "mongodb"
-    engine_version = "8.0"
     size           = null
     cloud_provider = null
     region         = null
@@ -128,35 +130,33 @@ run "rejects_size_without_placement" {
   expect_failures = [relay_database.this]
 }
 
-run "rejects_postgresql_parameters_on_mongodb" {
-  command = plan
+run "postgresql_tuning_passes_through" {
+  command = apply
 
   variables {
-    engine                = "mongodb"
     postgresql_parameters = { work_mem = "64MB" }
+    replication           = { mode = "async", synchronous_replicas = 1 }
+    users                 = {}
+    user_passwords        = {}
   }
 
-  expect_failures = [relay_database.this]
+  assert {
+    condition     = relay_database.this.postgresql_parameters["work_mem"] == "64MB"
+    error_message = "postgresql_parameters pass through"
+  }
+
+  assert {
+    condition     = relay_database.this.replication.mode == "async" && relay_database.this.replication.synchronous_replicas == 1
+    error_message = "replication passes through"
+  }
 }
 
-run "rejects_replication_on_mongodb" {
+run "rejects_unknown_size" {
   command = plan
 
   variables {
-    engine      = "mongodb"
-    replication = { mode = "async" }
+    size = "xl"
   }
 
-  expect_failures = [relay_database.this]
-}
-
-run "rejects_unknown_engine_and_size" {
-  command = plan
-
-  variables {
-    engine = "mysql"
-    size   = "xl"
-  }
-
-  expect_failures = [var.engine, var.size]
+  expect_failures = [var.size]
 }

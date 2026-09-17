@@ -1,7 +1,8 @@
 # terraform-relay-postgresql
 
-Creates a Relay managed database cluster and its engine users. A `size` preset
-covers the common single-group shapes; `nodes` takes over for anything else.
+Creates a Relay managed PostgreSQL cluster and its database users. A `size`
+preset covers the common single-group shapes; `nodes` takes over for anything
+else.
 
 ```hcl
 module "billing" {
@@ -10,7 +11,6 @@ module "billing" {
 
   workspace_id   = module.workspace.workspace_id
   name           = "billing"
-  engine         = "postgresql"
   engine_version = "17"
   size           = "m"
   cloud_provider = "aws"
@@ -32,8 +32,8 @@ Users get a generated password, exposed once in the sensitive
 `generated_passwords` output and kept in state, unless `user_passwords` has an
 entry for them.
 
-Changing `name`, `engine` or `default_connections` replaces the cluster and its
-data. Version upgrades go through Relay's upgrade flow; a plan that changes
+Changing `name` or `default_connections` replaces the cluster and its data.
+Version upgrades go through Relay's upgrade flow; a plan that changes
 `engine_version` fails instead of replacing the cluster.
 
 <!-- BEGIN_TF_DOCS -->
@@ -65,8 +65,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_engine"></a> [engine](#input\_engine) | postgresql or mongodb. | `string` | n/a | yes |
-| <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Engine version. Upgrades go through Relay's upgrade flow, not this variable. | `string` | n/a | yes |
+| <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | PostgreSQL version. Upgrades go through Relay's upgrade flow, not this variable. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Cluster name, unique in the workspace. Changing it replaces the cluster. | `string` | n/a | yes |
 | <a name="input_workspace_id"></a> [workspace\_id](#input\_workspace\_id) | Workspace the cluster belongs to. | `string` | n/a | yes |
 | <a name="input_backups_enabled"></a> [backups\_enabled](#input\_backups\_enabled) | Scheduled backups. Null keeps the platform default. | `bool` | `null` | no |
@@ -78,11 +77,11 @@ No modules.
 | <a name="input_params"></a> [params](#input\_params) | Engine parameters. | `map(string)` | `null` | no |
 | <a name="input_postgresql_parameters"></a> [postgresql\_parameters](#input\_postgresql\_parameters) | PostgreSQL settings. An empty map resets them; null leaves them unmanaged. | `map(string)` | `null` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region for the data group when using size. | `string` | `null` | no |
-| <a name="input_replication"></a> [replication](#input\_replication) | PostgreSQL replication tuning. | <pre>object({<br/>    mode                 = string<br/>    synchronous_replicas = optional(number)<br/>  })</pre> | `null` | no |
+| <a name="input_replication"></a> [replication](#input\_replication) | Replication tuning. | <pre>object({<br/>    mode                 = string<br/>    synchronous_replicas = optional(number)<br/>  })</pre> | `null` | no |
 | <a name="input_size"></a> [size](#input\_size) | Preset node shape: s, m or l. Set either size or nodes. | `string` | `null` | no |
 | <a name="input_timeouts"></a> [timeouts](#input\_timeouts) | Create, update and delete timeouts, for example 45m. | <pre>object({<br/>    create = optional(string)<br/>    update = optional(string)<br/>    delete = optional(string)<br/>  })</pre> | `{}` | no |
 | <a name="input_user_passwords"></a> [user\_passwords](#input\_user\_passwords) | Passwords keyed by username, for users that should not get a generated one. | `map(string)` | `{}` | no |
-| <a name="input_users"></a> [users](#input\_users) | Engine users keyed by username. A user without an entry in user\_passwords gets a generated password. | <pre>map(object({<br/>    roles = list(object({<br/>      role       = string<br/>      db         = optional(string, "")<br/>      collection = optional(string, "")<br/>    }))<br/>    description          = optional(string)<br/>    restricted_resources = optional(list(string))<br/>    expires_at           = optional(string)<br/>    connection_limit     = optional(number)<br/>    statement_timeout    = optional(string)<br/>  }))</pre> | `{}` | no |
+| <a name="input_users"></a> [users](#input\_users) | Database users keyed by username. A user without an entry in user\_passwords gets a generated password. | <pre>map(object({<br/>    roles = list(object({<br/>      role = string<br/>      db   = optional(string, "")<br/>    }))<br/>    description          = optional(string)<br/>    restricted_resources = optional(list(string))<br/>    expires_at           = optional(string)<br/>    connection_limit     = optional(number)<br/>    statement_timeout    = optional(string)<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
 
