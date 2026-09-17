@@ -1,5 +1,5 @@
 mock_provider "relay" {
-  mock_resource "relay_database" {
+  mock_resource "relay_postgresql_cluster" {
     defaults = {
       id            = "db-123"
       phase         = "running"
@@ -7,7 +7,7 @@ mock_provider "relay" {
       endpoint_port = 5432
     }
   }
-  mock_resource "relay_database_user" {
+  mock_resource "relay_postgresql_user" {
     defaults = {
       id                 = "db-123/app"
       generated_password = "generated"
@@ -18,14 +18,14 @@ mock_provider "relay" {
 variables {
   workspace_id   = "ws-1"
   name           = "billing"
-  engine_version = "17"
-  size           = "m"
+  engine_version = "18"
+  size           = "R30"
   node_count     = 2
-  cloud_provider = "aws"
+  cloud          = "aws"
   region         = "us-east-1"
   users = {
-    app       = { roles = [{ role = "readWrite", db = "billing" }] }
-    reporting = { roles = [{ role = "readOnly", db = "billing" }], connection_limit = 5 }
+    app       = { roles = [{ role = "readWrite", database = "billing" }] }
+    reporting = { roles = [{ role = "readOnly", database = "billing" }], connection_limit = 5 }
   }
   user_passwords = {
     reporting = "hunter2"
@@ -36,37 +36,32 @@ run "size_preset_and_users" {
   command = apply
 
   assert {
-    condition     = relay_database.this.engine == "postgresql"
-    error_message = "the cluster is always postgresql"
+    condition     = length(relay_postgresql_cluster.this.nodes) == 1 && relay_postgresql_cluster.this.nodes["primary"].count == 2
+    error_message = "size builds one primary group with node_count nodes"
   }
 
   assert {
-    condition     = length(relay_database.this.nodes) == 1 && relay_database.this.nodes[0].count == 2
-    error_message = "size builds one data group with node_count nodes"
+    condition     = relay_postgresql_cluster.this.nodes["primary"].tier == "R30" && relay_postgresql_cluster.this.nodes["primary"].resources.storage == "40Gi"
+    error_message = "size R30 maps to catalog included storage"
   }
 
   assert {
-    condition     = relay_database.this.nodes[0].resources.cpu == "2" && relay_database.this.nodes[0].resources.storage == "50Gi"
-    error_message = "size m maps to the m preset"
-  }
-
-  assert {
-    condition     = relay_database_user.this["app"].generate_password && relay_database_user.this["app"].password == null
+    condition     = relay_postgresql_user.this["app"].generate_password && relay_postgresql_user.this["app"].password == null
     error_message = "a user without a password gets a generated one"
   }
 
   assert {
-    condition     = !relay_database_user.this["reporting"].generate_password
+    condition     = !relay_postgresql_user.this["reporting"].generate_password
     error_message = "a user with a password does not get a generated one"
   }
 
   assert {
-    condition     = relay_database_user.this["reporting"].database_id == "db-123"
+    condition     = relay_postgresql_user.this["reporting"].cluster_id == "db-123"
     error_message = "users are created on the module's cluster"
   }
 
   assert {
-    condition     = output.database_id == "db-123" && output.endpoint.port == 5432 && output.usernames == ["app", "reporting"]
+    condition     = output.cluster_id == "db-123" && output.endpoint.port == 5432 && output.usernames == ["app", "reporting"]
     error_message = "outputs expose the cluster and its users"
   }
 
@@ -80,26 +75,26 @@ run "explicit_nodes" {
   command = apply
 
   variables {
-    size           = null
-    cloud_provider = null
-    region         = null
-    nodes = [{
-      role     = "data"
-      count    = 3
-      provider = "gcp"
-      region   = "us-central1"
-      resources = {
-        cpu     = "1"
-        memory  = "4Gi"
-        storage = "20Gi"
+    size   = null
+    cloud  = null
+    region = null
+    nodes = {
+      primary = {
+        count  = 3
+        cloud  = "gcp"
+        region = "us-central1"
+        tier   = "R20"
+        resources = {
+          storage = "40Gi"
+        }
       }
-    }]
+    }
     users          = {}
     user_passwords = {}
   }
 
   assert {
-    condition     = relay_database.this.nodes[0].provider == "gcp" && relay_database.this.nodes[0].count == 3
+    condition     = relay_postgresql_cluster.this.nodes["primary"].cloud == "gcp" && relay_postgresql_cluster.this.nodes["primary"].count == 3 && relay_postgresql_cluster.this.nodes["primary"].tier == "R20"
     error_message = "explicit nodes pass through"
   }
 }
@@ -108,16 +103,18 @@ run "rejects_size_and_nodes" {
   command = plan
 
   variables {
-    nodes = [{
-      role      = "data"
-      count     = 1
-      provider  = "aws"
-      region    = "us-east-1"
-      resources = { cpu = "1", memory = "1Gi", storage = "1Gi" }
-    }]
+    nodes = {
+      primary = {
+        count     = 1
+        cloud     = "aws"
+        region    = "us-east-1"
+        tier      = "R10"
+        resources = { storage = "10Gi" }
+      }
+    }
   }
 
-  expect_failures = [relay_database.this]
+  expect_failures = [relay_postgresql_cluster.this]
 }
 
 run "rejects_size_without_placement" {
@@ -127,26 +124,26 @@ run "rejects_size_without_placement" {
     region = null
   }
 
-  expect_failures = [relay_database.this]
+  expect_failures = [relay_postgresql_cluster.this]
 }
 
 run "postgresql_tuning_passes_through" {
   command = apply
 
   variables {
-    postgresql_parameters = { work_mem = "64MB" }
-    replication           = { mode = "async", synchronous_replicas = 1 }
-    users                 = {}
-    user_passwords        = {}
+    parameters     = { work_mem = "64MB" }
+    replication    = { mode = "async", synchronous_replicas = 1 }
+    users          = {}
+    user_passwords = {}
   }
 
   assert {
-    condition     = relay_database.this.postgresql_parameters["work_mem"] == "64MB"
-    error_message = "postgresql_parameters pass through"
+    condition     = relay_postgresql_cluster.this.parameters["work_mem"] == "64MB"
+    error_message = "parameters pass through"
   }
 
   assert {
-    condition     = relay_database.this.replication.mode == "async" && relay_database.this.replication.synchronous_replicas == 1
+    condition     = relay_postgresql_cluster.this.replication.mode == "async" && relay_postgresql_cluster.this.replication.synchronous_replicas == 1
     error_message = "replication passes through"
   }
 }
@@ -155,7 +152,7 @@ run "rejects_unknown_size" {
   command = plan
 
   variables {
-    size = "xl"
+    size = "R140"
   }
 
   expect_failures = [var.size]

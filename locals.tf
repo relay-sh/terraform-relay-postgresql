@@ -1,18 +1,35 @@
 locals {
-  presets = {
-    s = { cpu = "500m", memory = "1Gi", storage = "10Gi" }
-    m = { cpu = "2", memory = "8Gi", storage = "50Gi" }
-    l = { cpu = "4", memory = "16Gi", storage = "200Gi" }
+  included_storage = {
+    R5   = "5Gi"
+    R10  = "10Gi"
+    R20  = "20Gi"
+    R30  = "40Gi"
+    R40  = "80Gi"
+    R50  = "160Gi"
+    R60  = "320Gi"
+    R70  = "500Gi"
+    R80  = "750Gi"
+    R90  = "900Gi"
+    R100 = "1000Gi"
+    R200 = "1500Gi"
   }
 
-  nodes = var.nodes != null ? var.nodes : [{
-    role      = "data"
-    count     = var.node_count
-    provider  = var.cloud_provider
-    region    = var.region
-    resources = merge(local.presets[coalesce(var.size, "s")], { storage_class = null, iops = null, throughput = null })
-    tags      = null
-  }]
+  nodes = var.nodes != null ? var.nodes : {
+    primary = {
+      count  = var.node_count
+      cloud  = var.cloud
+      region = var.region
+      tier   = var.size
+      resources = {
+        storage       = local.included_storage[var.size]
+        storage_class = null
+        iops          = null
+        throughput    = null
+      }
+      synchronous = true
+      failover    = true
+    }
+  }
 
   password_users = toset(nonsensitive(keys(var.user_passwords)))
 }

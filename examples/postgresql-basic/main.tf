@@ -9,18 +9,18 @@ module "billing" {
 
   workspace_id   = data.relay_workspace.prod.id
   name           = "billing"
-  engine_version = "17"
-  size           = "m"
+  engine_version = "18"
+  size           = "R30"
   node_count     = 2
-  cloud_provider = "aws"
+  cloud          = "aws"
   region         = "us-east-1"
 
-  postgresql_parameters = {
+  parameters = {
     work_mem = "64MB"
   }
 
   users = {
-    app = { roles = [{ role = "readWrite", db = "billing" }] }
+    app = { roles = [{ role = "readWrite", database = "billing" }] }
   }
 }
 
