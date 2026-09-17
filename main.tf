@@ -1,15 +1,11 @@
-resource "relay_database" "this" {
+resource "relay_postgresql_cluster" "this" {
   workspace_id = var.workspace_id
   name         = var.name
-  engine       = "postgresql"
   version      = var.engine_version
   nodes        = local.nodes
+  parameters   = var.parameters
+  replication  = var.replication
 
-  params                  = var.params
-  postgresql_parameters   = var.postgresql_parameters
-  backups_enabled         = var.backups_enabled
-  replication             = var.replication
-  default_connections     = var.default_connections
   keep_backups_on_destroy = var.keep_backups_on_destroy
 
   timeouts {
@@ -24,17 +20,17 @@ resource "relay_database" "this" {
       error_message = "Set exactly one of size or nodes."
     }
     precondition {
-      condition     = var.nodes != null || (var.cloud_provider != null && var.region != null)
-      error_message = "cloud_provider and region are required when using size."
+      condition     = var.nodes != null || (var.cloud != null && var.region != null)
+      error_message = "cloud and region are required when using size."
     }
   }
 }
 
-resource "relay_database_user" "this" {
+resource "relay_postgresql_user" "this" {
   for_each = var.users
 
   workspace_id         = var.workspace_id
-  database_id          = relay_database.this.id
+  cluster_id           = relay_postgresql_cluster.this.id
   username             = each.key
   roles                = each.value.roles
   password             = contains(local.password_users, each.key) ? var.user_passwords[each.key] : null

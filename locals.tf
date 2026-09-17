@@ -14,20 +14,22 @@ locals {
     R200 = "1500Gi"
   }
 
-  nodes = var.nodes != null ? var.nodes : [{
-    role     = "data"
-    count    = var.node_count
-    provider = var.cloud_provider
-    region   = var.region
-    tier     = var.size
-    resources = {
-      storage       = local.included_storage[var.size]
-      storage_class = null
-      iops          = null
-      throughput    = null
+  nodes = var.nodes != null ? var.nodes : {
+    primary = {
+      count  = var.node_count
+      cloud  = var.cloud
+      region = var.region
+      tier   = var.size
+      resources = {
+        storage       = local.included_storage[var.size]
+        storage_class = null
+        iops          = null
+        throughput    = null
+      }
+      synchronous = true
+      failover    = true
     }
-    tags = null
-  }]
+  }
 
   password_users = toset(nonsensitive(keys(var.user_passwords)))
 }

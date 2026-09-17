@@ -9,8 +9,9 @@ variable "name" {
 }
 
 variable "engine_version" {
-  description = "PostgreSQL version. Upgrades go through Relay's upgrade flow, not this variable."
+  description = "Major PostgreSQL version. Omit it and the platform picks one. Upgrades go through Relay's upgrade flow, not this variable."
   type        = string
+  default     = null
 }
 
 variable "size" {
@@ -25,75 +26,53 @@ variable "size" {
 }
 
 variable "node_count" {
-  description = "Nodes in the data group when using size."
+  description = "Nodes in the primary group when using size."
   type        = number
   default     = 1
 }
 
-variable "cloud_provider" {
-  description = "Infrastructure provider for the data group when using size."
+variable "cloud" {
+  description = "Cloud for the primary group when using size, for example aws."
   type        = string
   default     = null
 }
 
 variable "region" {
-  description = "Region for the data group when using size."
+  description = "Region for the primary group when using size."
   type        = string
   default     = null
 }
 
 variable "nodes" {
-  description = "Explicit node groups. Each group names a catalog tier; CPU and memory are derived. Use this to set storage above the included size."
-  type = list(object({
-    role     = string
-    count    = number
-    provider = string
-    region   = string
-    tier     = string
+  description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. Use this to set storage above the included size or add extra groups."
+  type = map(object({
+    count  = optional(number, 1)
+    cloud  = optional(string)
+    region = optional(string)
+    tier   = string
     resources = object({
       storage       = string
       storage_class = optional(string)
       iops          = optional(number)
       throughput    = optional(number)
     })
-    tags = optional(map(string))
+    synchronous = optional(bool, true)
+    failover    = optional(bool, true)
   }))
   default = null
 }
 
-variable "params" {
-  description = "Engine parameters."
-  type        = map(string)
-  default     = null
-}
-
-variable "postgresql_parameters" {
+variable "parameters" {
   description = "PostgreSQL settings. An empty map resets them; null leaves them unmanaged."
   type        = map(string)
   default     = null
 }
 
-variable "backups_enabled" {
-  description = "Scheduled backups. Null keeps the platform default."
-  type        = bool
-  default     = null
-}
-
 variable "replication" {
-  description = "Replication tuning."
+  description = "Commit replication for the cluster."
   type = object({
     mode                 = string
     synchronous_replicas = optional(number)
-  })
-  default = null
-}
-
-variable "default_connections" {
-  description = "Relay-managed users and connections seeded when the cluster is ready. Changing it replaces the cluster."
-  type = object({
-    readonly  = optional(bool, false)
-    readwrite = optional(bool, false)
-    admin     = optional(bool, false)
   })
   default = null
 }
@@ -115,11 +94,11 @@ variable "timeouts" {
 }
 
 variable "users" {
-  description = "Database users keyed by username. A user without an entry in user_passwords gets a generated password."
+  description = "PostgreSQL users keyed by username. A user without an entry in user_passwords gets a generated password."
   type = map(object({
     roles = list(object({
-      role = string
-      db   = optional(string, "")
+      role     = string
+      database = optional(string, "")
     }))
     description          = optional(string)
     restricted_resources = optional(list(string))
