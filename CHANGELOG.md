@@ -2,4 +2,4 @@
 
 FEATURES:
 
-* Managed database cluster with size presets and engine users.
+* Managed PostgreSQL cluster with size presets and database users.

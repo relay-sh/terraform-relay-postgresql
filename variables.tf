@@ -8,18 +8,8 @@ variable "name" {
   type        = string
 }
 
-variable "engine" {
-  description = "postgresql or mongodb."
-  type        = string
-
-  validation {
-    condition     = contains(["postgresql", "mongodb"], var.engine)
-    error_message = "engine must be postgresql or mongodb."
-  }
-}
-
 variable "engine_version" {
-  description = "Engine version. Upgrades go through Relay's upgrade flow, not this variable."
+  description = "PostgreSQL version. Upgrades go through Relay's upgrade flow, not this variable."
   type        = string
 }
 
@@ -91,7 +81,7 @@ variable "backups_enabled" {
 }
 
 variable "replication" {
-  description = "PostgreSQL replication tuning."
+  description = "Replication tuning."
   type = object({
     mode                 = string
     synchronous_replicas = optional(number)
@@ -126,12 +116,11 @@ variable "timeouts" {
 }
 
 variable "users" {
-  description = "Engine users keyed by username. A user without an entry in user_passwords gets a generated password."
+  description = "Database users keyed by username. A user without an entry in user_passwords gets a generated password."
   type = map(object({
     roles = list(object({
-      role       = string
-      db         = optional(string, "")
-      collection = optional(string, "")
+      role = string
+      db   = optional(string, "")
     }))
     description          = optional(string)
     restricted_resources = optional(list(string))

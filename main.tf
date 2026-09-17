@@ -1,7 +1,7 @@
 resource "relay_database" "this" {
   workspace_id = var.workspace_id
   name         = var.name
-  engine       = var.engine
+  engine       = "postgresql"
   version      = var.engine_version
   nodes        = local.nodes
 
@@ -26,14 +26,6 @@ resource "relay_database" "this" {
     precondition {
       condition     = var.nodes != null || (var.cloud_provider != null && var.region != null)
       error_message = "cloud_provider and region are required when using size."
-    }
-    precondition {
-      condition     = var.postgresql_parameters == null || var.engine == "postgresql"
-      error_message = "postgresql_parameters only applies to postgresql."
-    }
-    precondition {
-      condition     = var.replication == null || var.engine == "postgresql"
-      error_message = "replication only applies to postgresql."
     }
   }
 }
