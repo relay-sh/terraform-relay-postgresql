@@ -1,11 +1,11 @@
-# terraform-relay-database
+# terraform-relay-postgresql
 
 Creates a Relay managed database cluster and its engine users. A `size` preset
 covers the common single-group shapes; `nodes` takes over for anything else.
 
 ```hcl
 module "billing" {
-  source  = "relay-sh/database/relay"
+  source  = "relay-sh/postgresql/relay"
   version = "~> 0.0.1"
 
   workspace_id   = module.workspace.workspace_id
