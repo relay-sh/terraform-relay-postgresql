@@ -10,7 +10,7 @@ module "billing" {
   workspace_id   = data.relay_workspace.prod.id
   name           = "billing"
   engine_version = "17"
-  size           = "m"
+  size           = "R30"
   node_count     = 2
   cloud_provider = "aws"
   region         = "us-east-1"

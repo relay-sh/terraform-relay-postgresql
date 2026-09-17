@@ -19,7 +19,7 @@ variables {
   workspace_id   = "ws-1"
   name           = "billing"
   engine_version = "17"
-  size           = "m"
+  size           = "R30"
   node_count     = 2
   cloud_provider = "aws"
   region         = "us-east-1"
@@ -46,8 +46,8 @@ run "size_preset_and_users" {
   }
 
   assert {
-    condition     = relay_database.this.nodes[0].resources.cpu == "2" && relay_database.this.nodes[0].resources.storage == "50Gi"
-    error_message = "size m maps to the m preset"
+    condition     = relay_database.this.nodes[0].tier == "R30" && relay_database.this.nodes[0].resources.storage == "40Gi"
+    error_message = "size R30 maps to catalog included storage"
   }
 
   assert {
@@ -88,10 +88,9 @@ run "explicit_nodes" {
       count    = 3
       provider = "gcp"
       region   = "us-central1"
+      tier     = "R20"
       resources = {
-        cpu     = "1"
-        memory  = "4Gi"
-        storage = "20Gi"
+        storage = "40Gi"
       }
     }]
     users          = {}
@@ -99,7 +98,7 @@ run "explicit_nodes" {
   }
 
   assert {
-    condition     = relay_database.this.nodes[0].provider == "gcp" && relay_database.this.nodes[0].count == 3
+    condition     = relay_database.this.nodes[0].provider == "gcp" && relay_database.this.nodes[0].count == 3 && relay_database.this.nodes[0].tier == "R20"
     error_message = "explicit nodes pass through"
   }
 }
@@ -113,7 +112,8 @@ run "rejects_size_and_nodes" {
       count     = 1
       provider  = "aws"
       region    = "us-east-1"
-      resources = { cpu = "1", memory = "1Gi", storage = "1Gi" }
+      tier      = "R10"
+      resources = { storage = "10Gi" }
     }]
   }
 
@@ -155,7 +155,7 @@ run "rejects_unknown_size" {
   command = plan
 
   variables {
-    size = "xl"
+    size = "R140"
   }
 
   expect_failures = [var.size]

@@ -14,13 +14,13 @@ variable "engine_version" {
 }
 
 variable "size" {
-  description = "Preset node shape: s, m or l. Set either size or nodes."
+  description = "Catalog machine tier (R5–R200). CPU and memory come from the catalog; included storage is the default volume. Set either size or nodes."
   type        = string
   default     = null
 
   validation {
-    condition     = var.size == null || contains(["s", "m", "l"], coalesce(var.size, "s"))
-    error_message = "size must be s, m or l."
+    condition     = var.size == null || contains(["R5", "R10", "R20", "R30", "R40", "R50", "R60", "R70", "R80", "R90", "R100", "R200"], coalesce(var.size, "R5"))
+    error_message = "size must be a catalog name: R5, R10, R20, R30, R40, R50, R60, R70, R80, R90, R100, or R200."
   }
 }
 
@@ -43,15 +43,14 @@ variable "region" {
 }
 
 variable "nodes" {
-  description = "Explicit node groups, for shapes the presets do not cover."
+  description = "Explicit node groups. Each group names a catalog tier; CPU and memory are derived. Use this to set storage above the included size."
   type = list(object({
     role     = string
     count    = number
     provider = string
     region   = string
+    tier     = string
     resources = object({
-      cpu           = string
-      memory        = string
       storage       = string
       storage_class = optional(string)
       iops          = optional(number)
