@@ -46,6 +46,11 @@ run "size_preset_and_users" {
   }
 
   assert {
+    condition     = relay_postgresql_cluster.this.nodes["primary"].role == "electable"
+    error_message = "the size preset builds an electable group"
+  }
+
+  assert {
     condition     = relay_postgresql_user.this["app"].generate_password && relay_postgresql_user.this["app"].password == null
     error_message = "a user without a password gets a generated one"
   }
@@ -146,6 +151,59 @@ run "postgresql_tuning_passes_through" {
     condition     = relay_postgresql_cluster.this.replication.mode == "async" && relay_postgresql_cluster.this.replication.synchronous_replicas == 1
     error_message = "replication passes through"
   }
+}
+
+run "read_only_group" {
+  command = apply
+
+  variables {
+    size   = null
+    cloud  = null
+    region = null
+    nodes = {
+      writers = {
+        count     = 2
+        cloud     = "aws"
+        region    = "us-east-1"
+        tier      = "R20"
+        resources = { storage = "40Gi" }
+      }
+      readers = {
+        count     = 1
+        cloud     = "aws"
+        region    = "us-east-1"
+        tier      = "R10"
+        resources = { storage = "10Gi" }
+        role      = "read_only"
+      }
+    }
+    users          = {}
+    user_passwords = {}
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.nodes["writers"].role == "electable" && relay_postgresql_cluster.this.nodes["readers"].role == "read_only"
+    error_message = "a group is electable unless it asks to be read_only"
+  }
+}
+
+run "rejects_unknown_role" {
+  command = plan
+
+  variables {
+    size   = null
+    cloud  = null
+    region = null
+    nodes = {
+      primary = {
+        tier      = "R10"
+        resources = { storage = "10Gi" }
+        role      = "data"
+      }
+    }
+  }
+
+  expect_failures = [var.nodes]
 }
 
 run "rejects_unknown_size" {

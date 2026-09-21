@@ -26,8 +26,7 @@ locals {
         iops          = null
         throughput    = null
       }
-      synchronous = true
-      failover    = true
+      role = "electable"
     }
   }
 
