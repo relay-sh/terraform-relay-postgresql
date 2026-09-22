@@ -153,7 +153,7 @@ run "postgresql_tuning_passes_through" {
   }
 }
 
-run "read_only_group" {
+run "node_roles" {
   command = apply
 
   variables {
@@ -176,14 +176,22 @@ run "read_only_group" {
         resources = { storage = "10Gi" }
         role      = "read_only"
       }
+      dr = {
+        count     = 1
+        cloud     = "aws"
+        region    = "us-west-2"
+        tier      = "R10"
+        resources = { storage = "10Gi" }
+        role      = "standby"
+      }
     }
     users          = {}
     user_passwords = {}
   }
 
   assert {
-    condition     = relay_postgresql_cluster.this.nodes["writers"].role == "electable" && relay_postgresql_cluster.this.nodes["readers"].role == "read_only"
-    error_message = "a group is electable unless it asks to be read_only"
+    condition     = relay_postgresql_cluster.this.nodes["writers"].role == "electable" && relay_postgresql_cluster.this.nodes["readers"].role == "read_only" && relay_postgresql_cluster.this.nodes["dr"].role == "standby"
+    error_message = "a group is electable unless it asks for another role"
   }
 }
 

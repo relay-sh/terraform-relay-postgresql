@@ -44,25 +44,25 @@ variable "region" {
 }
 
 variable "nodes" {
-  description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `read_only`, which keeps it out of the commit path and out of elections. Use this to set storage above the included size or add extra groups."
+  description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Use this to set storage above the included size or add extra groups."
   type = map(object({
     count  = optional(number, 1)
     cloud  = optional(string)
     region = optional(string)
     tier   = string
     resources = object({
-      storage       = string
-      storage_class = optional(string)
-      iops          = optional(number)
-      throughput    = optional(number)
+      storage    = string
+      disk_type  = optional(string)
+      iops       = optional(number)
+      throughput = optional(number)
     })
     role = optional(string, "electable")
   }))
   default = null
 
   validation {
-    condition     = var.nodes == null || alltrue([for n in values(coalesce(var.nodes, {})) : contains(["electable", "read_only"], n.role)])
-    error_message = "node role must be electable or read_only."
+    condition     = var.nodes == null || alltrue([for n in values(coalesce(var.nodes, {})) : contains(["electable", "standby", "read_only"], n.role)])
+    error_message = "node role must be electable, standby or read_only."
   }
 }
 
