@@ -21,10 +21,10 @@ locals {
       region = var.region
       tier   = var.size
       resources = {
-        storage       = local.included_storage[var.size]
-        storage_class = null
-        iops          = null
-        throughput    = null
+        storage    = local.included_storage[var.size]
+        disk_type  = null
+        iops       = null
+        throughput = null
       }
       role = "electable"
     }
