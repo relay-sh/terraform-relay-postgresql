@@ -47,8 +47,8 @@ variable "nodes" {
   description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Use this to set storage above the included size or add extra groups."
   type = map(object({
     count  = optional(number, 1)
-    cloud  = optional(string)
-    region = optional(string)
+    cloud  = string
+    region = string
     tier   = string
     resources = object({
       storage    = string
