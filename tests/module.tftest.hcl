@@ -179,7 +179,7 @@ run "node_roles" {
       dr = {
         count     = 1
         cloud     = "aws"
-        region    = "us-west-2"
+        region    = "us-east-1"
         tier      = "R10"
         resources = { storage = "10Gi" }
         role      = "standby"
