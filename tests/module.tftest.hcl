@@ -204,6 +204,8 @@ run "rejects_unknown_role" {
     region = null
     nodes = {
       primary = {
+        cloud     = "aws"
+        region    = "us-east-1"
         tier      = "R10"
         resources = { storage = "10Gi" }
         role      = "data"
