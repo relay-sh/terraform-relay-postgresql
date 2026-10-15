@@ -20,8 +20,8 @@ variable "size" {
   default     = null
 
   validation {
-    condition     = var.size == null || contains(["R5", "R10", "R20", "R30", "R40", "R50", "R60", "R70", "R80", "R90", "R100", "R200"], coalesce(var.size, "R5"))
-    error_message = "size must be a catalog name: R5, R10, R20, R30, R40, R50, R60, R70, R80, R90, R100, or R200."
+    condition     = var.size == null || contains(["R5", "R10", "R20", "R30", "R40", "R50", "R60", "R80", "R100", "R200"], coalesce(var.size, "R5"))
+    error_message = "size must be a catalog name: R5, R10, R20, R30, R40, R50, R60, R80, R100, or R200."
   }
 }
 
