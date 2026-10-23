@@ -10,3 +10,4 @@ BREAKING CHANGES:
 FEATURES:
 
 * Managed PostgreSQL cluster with catalog size presets and database users.
+* Creates every logical database named in `users[*].roles[*].database`, plus any in `databases`, before the users.

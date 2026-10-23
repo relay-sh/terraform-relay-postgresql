@@ -7,6 +7,12 @@ mock_provider "relay" {
       endpoint_port = 5432
     }
   }
+  mock_resource "relay_postgresql_database" {
+    defaults = {
+      id    = "db-123/billing"
+      phase = "Ready"
+    }
+  }
   mock_resource "relay_postgresql_user" {
     defaults = {
       id                 = "db-123/app"
@@ -73,6 +79,37 @@ run "size_preset_and_users" {
   assert {
     condition     = keys(nonsensitive(output.generated_passwords)) == ["app"]
     error_message = "only generated passwords are output"
+  }
+
+  assert {
+    condition     = output.databases == ["billing"] && relay_postgresql_database.this["billing"].cluster_id == "db-123"
+    error_message = "a database named in roles is created once on the module's cluster"
+  }
+}
+
+run "databases" {
+  command = apply
+
+  variables {
+    users = {
+      app   = { roles = [{ role = "readWrite", database = "billing" }, { role = "readOnly", database = "ledger" }] }
+      admin = { roles = [{ role = "admin" }] }
+    }
+    databases = {
+      billing = { description = "invoices" }
+      archive = {}
+    }
+    user_passwords = {}
+  }
+
+  assert {
+    condition     = output.databases == ["archive", "billing", "ledger"]
+    error_message = "databases from roles and from var.databases are merged, and admin adds none"
+  }
+
+  assert {
+    condition     = relay_postgresql_database.this["billing"].description == "invoices" && relay_postgresql_database.this["ledger"].description == null
+    error_message = "var.databases sets the description of a database named in roles"
   }
 }
 

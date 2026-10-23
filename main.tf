@@ -26,8 +26,19 @@ resource "relay_postgresql_cluster" "this" {
   }
 }
 
+resource "relay_postgresql_database" "this" {
+  for_each = local.databases
+
+  workspace_id = var.workspace_id
+  cluster_id   = relay_postgresql_cluster.this.id
+  name         = each.key
+  description  = each.value.description
+}
+
 resource "relay_postgresql_user" "this" {
   for_each = var.users
+
+  depends_on = [relay_postgresql_database.this]
 
   workspace_id         = var.workspace_id
   cluster_id           = relay_postgresql_cluster.this.id

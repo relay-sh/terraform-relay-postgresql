@@ -29,4 +29,7 @@ locals {
   }
 
   password_users = toset(nonsensitive(keys(var.user_passwords)))
+
+  role_databases = toset(flatten([for u in values(var.users) : [for r in u.roles : r.database if r.database != ""]]))
+  databases      = merge({ for name in local.role_databases : name => { description = null } }, var.databases)
 }

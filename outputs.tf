@@ -26,6 +26,11 @@ output "private_endpoints" {
   value       = relay_postgresql_cluster.this.private_endpoints
 }
 
+output "databases" {
+  description = "Created logical database names."
+  value       = keys(relay_postgresql_database.this)
+}
+
 output "usernames" {
   description = "Created usernames."
   value       = keys(relay_postgresql_user.this)

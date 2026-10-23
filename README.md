@@ -1,6 +1,7 @@
 # terraform-relay-postgresql
 
-Creates a Relay managed PostgreSQL cluster and its database users. A `size`
+Creates a Relay managed PostgreSQL cluster, the logical databases its users'
+roles name, and the users. A `size`
 catalog tier covers the common single-group shapes; `nodes` takes over when
 you need extra storage or more than one group.
 
@@ -70,6 +71,7 @@ No modules.
 | Name | Type |
 | ---- | ---- |
 | [relay_postgresql_cluster.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/postgresql_cluster) | resource |
+| [relay_postgresql_database.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/postgresql_database) | resource |
 | [relay_postgresql_user.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/postgresql_user) | resource |
 
 ## Inputs
@@ -79,6 +81,7 @@ No modules.
 | <a name="input_name"></a> [name](#input\_name) | Cluster name, unique in the workspace. Changing it replaces the cluster. | `string` | n/a | yes |
 | <a name="input_workspace_id"></a> [workspace\_id](#input\_workspace\_id) | Workspace the cluster belongs to. | `string` | n/a | yes |
 | <a name="input_cloud"></a> [cloud](#input\_cloud) | Cloud for the primary group when using size, for example aws. | `string` | `null` | no |
+| <a name="input_databases"></a> [databases](#input\_databases) | Logical databases keyed by name, created before the users. Every database named in a user's roles is created even without an entry here. | <pre>map(object({<br/>    description = optional(string)<br/>  }))</pre> | `{}` | no |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Major PostgreSQL version. Omit it and the platform picks one. Upgrades go through Relay's upgrade flow, not this variable. | `string` | `null` | no |
 | <a name="input_keep_backups_on_destroy"></a> [keep\_backups\_on\_destroy](#input\_keep\_backups\_on\_destroy) | Keep the cluster's backups when it is destroyed. | `bool` | `false` | no |
 | <a name="input_node_count"></a> [node\_count](#input\_node\_count) | Nodes in the primary group when using size. | `number` | `1` | no |
@@ -89,13 +92,14 @@ No modules.
 | <a name="input_size"></a> [size](#input\_size) | Catalog machine tier (R5–R200). CPU and memory come from the catalog; included storage is the default volume. Set either size or nodes. | `string` | `null` | no |
 | <a name="input_timeouts"></a> [timeouts](#input\_timeouts) | Create, update and delete timeouts, for example 45m. | <pre>object({<br/>    create = optional(string)<br/>    update = optional(string)<br/>    delete = optional(string)<br/>  })</pre> | `{}` | no |
 | <a name="input_user_passwords"></a> [user\_passwords](#input\_user\_passwords) | Passwords keyed by username, for users that should not get a generated one. | `map(string)` | `{}` | no |
-| <a name="input_users"></a> [users](#input\_users) | PostgreSQL users keyed by username. A user without an entry in user\_passwords gets a generated password. | <pre>map(object({<br/>    roles = list(object({<br/>      role     = string<br/>      database = optional(string, "")<br/>    }))<br/>    description          = optional(string)<br/>    restricted_resources = optional(list(string))<br/>    expires_at           = optional(string)<br/>    connection_limit     = optional(number)<br/>    statement_timeout    = optional(string)<br/>  }))</pre> | `{}` | no |
+| <a name="input_users"></a> [users](#input\_users) | PostgreSQL users keyed by username. A user without an entry in user\_passwords gets a generated password. A database named in roles is created by the module. | <pre>map(object({<br/>    roles = list(object({<br/>      role     = string<br/>      database = optional(string, "")<br/>    }))<br/>    description          = optional(string)<br/>    restricted_resources = optional(list(string))<br/>    expires_at           = optional(string)<br/>    connection_limit     = optional(number)<br/>    statement_timeout    = optional(string)<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | Cluster ID. |
+| <a name="output_databases"></a> [databases](#output\_databases) | Created logical database names. |
 | <a name="output_endpoint"></a> [endpoint](#output\_endpoint) | Primary endpoint. |
 | <a name="output_generated_passwords"></a> [generated\_passwords](#output\_generated\_passwords) | Generated passwords by username. Not recoverable from the API. |
 | <a name="output_phase"></a> [phase](#output\_phase) | Cluster phase after the last apply. |
