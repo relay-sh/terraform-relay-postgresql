@@ -97,8 +97,16 @@ variable "timeouts" {
   default = {}
 }
 
+variable "databases" {
+  description = "Logical databases keyed by name, created before the users. Every database named in a user's roles is created even without an entry here."
+  type = map(object({
+    description = optional(string)
+  }))
+  default = {}
+}
+
 variable "users" {
-  description = "PostgreSQL users keyed by username. A user without an entry in user_passwords gets a generated password."
+  description = "PostgreSQL users keyed by username. A user without an entry in user_passwords gets a generated password. A database named in roles is created by the module."
   type = map(object({
     roles = list(object({
       role     = string
