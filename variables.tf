@@ -84,7 +84,7 @@ variable "storage_autoscale" {
 }
 
 variable "backup_schedule" {
-  description = "Backup schedule for the cluster. Null keeps the platform default; removing it resets the cluster to that default. Set either tiers or max_backups. Only the daily and weekly tiers change behavior today."
+  description = "Backup schedule for the cluster. Null keeps the platform default; removing it resets the cluster to that default. Set either tiers or max_backups. Every enabled tier is rendered into the backup crons; the weekly tier takes the full backup and the daily tier the incremental one."
   type = object({
     snapshot_time = optional(object({
       hour   = number

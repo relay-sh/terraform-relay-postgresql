@@ -46,7 +46,9 @@ entry for them.
 
 Backups follow the platform default schedule unless `backup_schedule` is set.
 Removing it later resets the cluster to that default; it does not turn backups
-off. Only the daily and weekly tiers change behavior today.
+off. Every enabled tier is rendered into the cluster's backup crons and
+retention counts; the weekly tier takes the full backup and the daily tier the
+incremental one.
 
 Changing `name` replaces the cluster and its data. Version upgrades go through
 Relay's upgrade flow; a plan that changes `engine_version` fails instead of replacing
@@ -86,7 +88,7 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_name"></a> [name](#input\_name) | Cluster name, unique in the workspace. Changing it replaces the cluster. | `string` | n/a | yes |
 | <a name="input_workspace_id"></a> [workspace\_id](#input\_workspace\_id) | Workspace the cluster belongs to. | `string` | n/a | yes |
-| <a name="input_backup_schedule"></a> [backup\_schedule](#input\_backup\_schedule) | Backup schedule for the cluster. Null keeps the platform default; removing it resets the cluster to that default. Set either tiers or max\_backups. Only the daily and weekly tiers change behavior today. | <pre>object({<br/>    snapshot_time = optional(object({<br/>      hour   = number<br/>      minute = number<br/>    }))<br/>    tiers = optional(list(object({<br/>      frequency       = string<br/>      interval        = number<br/>      retention_value = number<br/>      retention_unit  = optional(string)<br/>      enabled         = optional(bool)<br/>    })))<br/>    max_backups      = optional(number)<br/>    pitr_window_days = optional(number)<br/>  })</pre> | `null` | no |
+| <a name="input_backup_schedule"></a> [backup\_schedule](#input\_backup\_schedule) | Backup schedule for the cluster. Null keeps the platform default; removing it resets the cluster to that default. Set either tiers or max\_backups. Every enabled tier is rendered into the backup crons; the weekly tier takes the full backup and the daily tier the incremental one. | <pre>object({<br/>    snapshot_time = optional(object({<br/>      hour   = number<br/>      minute = number<br/>    }))<br/>    tiers = optional(list(object({<br/>      frequency       = string<br/>      interval        = number<br/>      retention_value = number<br/>      retention_unit  = optional(string)<br/>      enabled         = optional(bool)<br/>    })))<br/>    max_backups      = optional(number)<br/>    pitr_window_days = optional(number)<br/>  })</pre> | `null` | no |
 | <a name="input_cloud"></a> [cloud](#input\_cloud) | Cloud for the primary group when using size, for example aws. | `string` | `null` | no |
 | <a name="input_databases"></a> [databases](#input\_databases) | Logical databases keyed by name, created before the users. Every database named in a user's roles is created even without an entry here. | <pre>map(object({<br/>    description = optional(string)<br/>  }))</pre> | `{}` | no |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Major PostgreSQL version. Omit it and the platform picks one. Upgrades go through Relay's upgrade flow, not this variable. | `string` | `null` | no |
