@@ -83,6 +83,36 @@ variable "storage_autoscale" {
   default = null
 }
 
+variable "backup_schedule" {
+  description = "Backup schedule for the cluster. Null keeps the platform default; removing it resets the cluster to that default. Set either tiers or max_backups. Only the daily and weekly tiers change behavior today."
+  type = object({
+    snapshot_time = optional(object({
+      hour   = number
+      minute = number
+    }))
+    tiers = optional(list(object({
+      frequency       = string
+      interval        = number
+      retention_value = number
+      retention_unit  = optional(string)
+      enabled         = optional(bool)
+    })))
+    max_backups      = optional(number)
+    pitr_window_days = optional(number)
+  })
+  default = null
+
+  validation {
+    condition     = try(var.backup_schedule.tiers == null || var.backup_schedule.max_backups == null, true)
+    error_message = "backup_schedule takes either tiers or max_backups, not both."
+  }
+
+  validation {
+    condition     = try(alltrue([for t in var.backup_schedule.tiers : contains(["hourly", "daily", "weekly", "monthly"], t.frequency)]), true)
+    error_message = "backup_schedule tier frequency must be hourly, daily, weekly or monthly."
+  }
+}
+
 variable "parameters" {
   description = "PostgreSQL settings. An empty map resets them; null leaves them unmanaged."
   type        = map(string)
