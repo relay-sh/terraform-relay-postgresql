@@ -55,6 +55,12 @@ variable "nodes" {
       disk_type  = optional(string)
       iops       = optional(number)
       throughput = optional(number)
+      storage_autoscale = optional(object({
+        enabled           = bool
+        threshold_percent = optional(number)
+        increase_percent  = optional(number)
+        max_storage       = optional(string)
+      }))
     })
     role = optional(string, "electable")
   }))
@@ -64,6 +70,17 @@ variable "nodes" {
     condition     = var.nodes == null || alltrue([for n in values(coalesce(var.nodes, {})) : contains(["electable", "standby", "read_only"], n.role)])
     error_message = "node role must be electable, standby or read_only."
   }
+}
+
+variable "storage_autoscale" {
+  description = "Grows the primary group's volume past its included storage, up to max_storage, when using size. With nodes, set it per group under resources."
+  type = object({
+    enabled           = bool
+    threshold_percent = optional(number)
+    increase_percent  = optional(number)
+    max_storage       = optional(string)
+  })
+  default = null
 }
 
 variable "parameters" {

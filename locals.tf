@@ -23,6 +23,8 @@ locals {
         disk_type  = null
         iops       = null
         throughput = null
+
+        storage_autoscale = var.storage_autoscale
       }
       role = "electable"
     }

@@ -10,4 +10,5 @@ BREAKING CHANGES:
 FEATURES:
 
 * Managed PostgreSQL cluster with catalog size presets and database users.
+* `storage_autoscale` grows volumes past their storage, for the size preset or per group in `nodes`.
 * Creates every logical database named in `users[*].roles[*].database`, plus any in `databases`, before the users.
