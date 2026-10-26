@@ -262,3 +262,60 @@ run "rejects_unknown_size" {
 
   expect_failures = [var.size]
 }
+
+run "storage_autoscale_with_size" {
+  command = apply
+
+  variables {
+    storage_autoscale = { enabled = true, max_storage = "200Gi" }
+    users             = {}
+    user_passwords    = {}
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale.enabled && relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale.max_storage == "200Gi"
+    error_message = "storage_autoscale reaches the size preset group"
+  }
+}
+
+run "storage_autoscale_per_group" {
+  command = apply
+
+  variables {
+    size   = null
+    cloud  = null
+    region = null
+    nodes = {
+      primary = {
+        cloud  = "aws"
+        region = "us-east-1"
+        tier   = "R20"
+        resources = {
+          storage           = "40Gi"
+          storage_autoscale = { enabled = true, threshold_percent = 85, max_storage = "400Gi" }
+        }
+      }
+    }
+    users          = {}
+    user_passwords = {}
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale.threshold_percent == 85
+    error_message = "storage_autoscale passes through on explicit nodes"
+  }
+}
+
+run "no_storage_autoscale_by_default" {
+  command = plan
+
+  variables {
+    users          = {}
+    user_passwords = {}
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale == null
+    error_message = "storage_autoscale stays off unless asked for"
+  }
+}
