@@ -19,6 +19,12 @@ mock_provider "relay" {
       generated_password = "generated"
     }
   }
+  mock_resource "relay_backup_schedule" {
+    defaults = {
+      id               = "db-123"
+      platform_default = false
+    }
+  }
 }
 
 variables {
@@ -318,4 +324,95 @@ run "no_storage_autoscale_by_default" {
     condition     = relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale == null
     error_message = "storage_autoscale stays off unless asked for"
   }
+}
+
+run "no_backup_schedule_by_default" {
+  command = plan
+
+  variables {
+    users          = {}
+    user_passwords = {}
+  }
+
+  assert {
+    condition     = length(relay_backup_schedule.this) == 0
+    error_message = "the platform default backup schedule is kept unless one is set"
+  }
+}
+
+run "backup_schedule_with_tiers" {
+  command = apply
+
+  variables {
+    backup_schedule = {
+      snapshot_time    = { hour = 3, minute = 30 }
+      pitr_window_days = 14
+      tiers = [
+        { frequency = "daily", interval = 1, retention_value = 7 },
+        { frequency = "weekly", interval = 1, retention_value = 4, enabled = true },
+      ]
+    }
+    users          = {}
+    user_passwords = {}
+  }
+
+  assert {
+    condition     = relay_backup_schedule.this[0].cluster_id == "db-123" && relay_backup_schedule.this[0].workspace_id == "ws-1"
+    error_message = "the backup schedule targets the module's cluster"
+  }
+
+  assert {
+    condition     = relay_backup_schedule.this[0].snapshot_time.hour == 3 && relay_backup_schedule.this[0].snapshot_time.minute == 30 && relay_backup_schedule.this[0].pitr_window_days == 14
+    error_message = "snapshot_time and pitr_window_days pass through"
+  }
+
+  assert {
+    condition     = length(relay_backup_schedule.this[0].tiers) == 2 && relay_backup_schedule.this[0].tiers[1].frequency == "weekly" && relay_backup_schedule.this[0].tiers[1].retention_value == 4
+    error_message = "tiers pass through"
+  }
+
+  assert {
+    condition     = relay_backup_schedule.this[0].max_backups == null
+    error_message = "max_backups stays unset with tiers"
+  }
+}
+
+run "backup_schedule_with_max_backups" {
+  command = apply
+
+  variables {
+    backup_schedule = { max_backups = 7 }
+    users           = {}
+    user_passwords  = {}
+  }
+
+  assert {
+    condition     = relay_backup_schedule.this[0].max_backups == 7 && relay_backup_schedule.this[0].tiers == null
+    error_message = "max_backups passes through without tiers"
+  }
+}
+
+run "rejects_tiers_and_max_backups" {
+  command = plan
+
+  variables {
+    backup_schedule = {
+      max_backups = 7
+      tiers       = [{ frequency = "weekly", interval = 1, retention_value = 4 }]
+    }
+  }
+
+  expect_failures = [var.backup_schedule]
+}
+
+run "rejects_yearly_tier" {
+  command = plan
+
+  variables {
+    backup_schedule = {
+      tiers = [{ frequency = "yearly", interval = 1, retention_value = 2 }]
+    }
+  }
+
+  expect_failures = [var.backup_schedule]
 }

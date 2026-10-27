@@ -19,6 +19,15 @@ module "billing" {
     work_mem = "64MB"
   }
 
+  backup_schedule = {
+    snapshot_time    = { hour = 3, minute = 30 }
+    pitr_window_days = 14
+    tiers = [
+      { frequency = "daily", interval = 1, retention_value = 7 },
+      { frequency = "weekly", interval = 1, retention_value = 4 },
+    ]
+  }
+
   users = {
     app = { roles = [{ role = "readWrite", database = "billing" }] }
   }

@@ -52,3 +52,14 @@ resource "relay_postgresql_user" "this" {
   connection_limit     = each.value.connection_limit
   statement_timeout    = each.value.statement_timeout
 }
+
+resource "relay_backup_schedule" "this" {
+  count = var.backup_schedule == null ? 0 : 1
+
+  workspace_id     = var.workspace_id
+  cluster_id       = relay_postgresql_cluster.this.id
+  snapshot_time    = var.backup_schedule.snapshot_time
+  tiers            = var.backup_schedule.tiers
+  max_backups      = var.backup_schedule.max_backups
+  pitr_window_days = var.backup_schedule.pitr_window_days
+}
