@@ -11,6 +11,6 @@ permissions:
 
 jobs:
   module:
-    uses: relay-sh/workflows/.github/workflows/terraform-module.yaml@main
+    uses: relay-sh/terraform-ci/.github/workflows/terraform-module.yaml@main
     secrets:
       provider-read-token: ${{ secrets.PROVIDER_READ_TOKEN }}
