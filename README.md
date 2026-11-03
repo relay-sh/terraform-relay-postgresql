@@ -61,13 +61,13 @@ the cluster.
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_relay"></a> [relay](#requirement\_relay) | ~> 0.0.10 |
+| <a name="requirement_relay"></a> [relay](#requirement\_relay) | ~> 0.0.1 |
 
 ## Providers
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_relay"></a> [relay](#provider\_relay) | ~> 0.0.10 |
+| <a name="provider_relay"></a> [relay](#provider\_relay) | ~> 0.0.1 |
 
 ## Modules
 

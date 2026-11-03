@@ -4,7 +4,7 @@ terraform {
   required_providers {
     relay = {
       source  = "relay-sh/relay"
-      version = "~> 0.0.10"
+      version = "~> 0.0.1"
     }
   }
 }
