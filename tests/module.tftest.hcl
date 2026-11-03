@@ -416,3 +416,16 @@ run "rejects_yearly_tier" {
 
   expect_failures = [var.backup_schedule]
 }
+
+run "default_connections_pass_through" {
+  command = plan
+
+  variables {
+    default_connections = { readonly = true, admin = false }
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.default_connections.readonly == true && relay_postgresql_cluster.this.default_connections.admin == false
+    error_message = "default_connections reaches the cluster"
+  }
+}
