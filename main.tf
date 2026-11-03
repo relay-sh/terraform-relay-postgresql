@@ -7,6 +7,7 @@ resource "relay_postgresql_cluster" "this" {
   replication  = var.replication
 
   keep_backups_on_destroy = var.keep_backups_on_destroy
+  default_connections     = var.default_connections
 
   timeouts {
     create = var.timeouts.create

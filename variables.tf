@@ -128,6 +128,16 @@ variable "replication" {
   default = null
 }
 
+variable "default_connections" {
+  description = "Relay-managed read-only, read-write and admin users, each with a Relay connection. Null creates all three on create and keeps the current value afterwards; a role omitted inside the object does the same. Turning a role off on an existing cluster deletes its connection and user."
+  type = object({
+    readonly  = optional(bool)
+    readwrite = optional(bool)
+    admin     = optional(bool)
+  })
+  default = null
+}
+
 variable "keep_backups_on_destroy" {
   description = "Keep the cluster's backups when it is destroyed."
   type        = bool

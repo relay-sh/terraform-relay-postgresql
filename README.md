@@ -61,13 +61,13 @@ the cluster.
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_relay"></a> [relay](#requirement\_relay) | ~> 0.0.1 |
+| <a name="requirement_relay"></a> [relay](#requirement\_relay) | ~> 0.0.10 |
 
 ## Providers
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_relay"></a> [relay](#provider\_relay) | ~> 0.0.1 |
+| <a name="provider_relay"></a> [relay](#provider\_relay) | ~> 0.0.10 |
 
 ## Modules
 
@@ -91,6 +91,7 @@ No modules.
 | <a name="input_backup_schedule"></a> [backup\_schedule](#input\_backup\_schedule) | Backup schedule for the cluster. Null keeps the platform default; removing it resets the cluster to that default. Set either tiers or max\_backups. Every enabled tier is rendered into the backup crons; the weekly tier takes the full backup and the daily tier the incremental one. | <pre>object({<br/>    snapshot_time = optional(object({<br/>      hour   = number<br/>      minute = number<br/>    }))<br/>    tiers = optional(list(object({<br/>      frequency       = string<br/>      interval        = number<br/>      retention_value = number<br/>      retention_unit  = optional(string)<br/>      enabled         = optional(bool)<br/>    })))<br/>    max_backups      = optional(number)<br/>    pitr_window_days = optional(number)<br/>  })</pre> | `null` | no |
 | <a name="input_cloud"></a> [cloud](#input\_cloud) | Cloud for the primary group when using size, for example aws. | `string` | `null` | no |
 | <a name="input_databases"></a> [databases](#input\_databases) | Logical databases keyed by name, created before the users. Every database named in a user's roles is created even without an entry here. | <pre>map(object({<br/>    description = optional(string)<br/>  }))</pre> | `{}` | no |
+| <a name="input_default_connections"></a> [default\_connections](#input\_default\_connections) | Relay-managed read-only, read-write and admin users, each with a Relay connection. Null creates all three on create and keeps the current value afterwards; a role omitted inside the object does the same. Turning a role off on an existing cluster deletes its connection and user. | <pre>object({<br/>    readonly  = optional(bool)<br/>    readwrite = optional(bool)<br/>    admin     = optional(bool)<br/>  })</pre> | `null` | no |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Major PostgreSQL version. Omit it and the platform picks one. Upgrades go through Relay's upgrade flow, not this variable. | `string` | `null` | no |
 | <a name="input_keep_backups_on_destroy"></a> [keep\_backups\_on\_destroy](#input\_keep\_backups\_on\_destroy) | Keep the cluster's backups when it is destroyed. | `bool` | `false` | no |
 | <a name="input_node_count"></a> [node\_count](#input\_node\_count) | Nodes in the primary group when using size. | `number` | `1` | no |
