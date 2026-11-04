@@ -1,3 +1,9 @@
+## Unreleased
+
+ENHANCEMENTS:
+
+* `users[*].connections` creates a Relay connection per user and database through `relay_connection`, exposed in the `connections` output. It needs provider 0.0.14 or later.
+
 ## 0.0.2 (November 3, 2026)
 
 ENHANCEMENTS:

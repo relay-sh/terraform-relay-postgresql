@@ -21,7 +21,7 @@ module "billing" {
 
   backup_schedule = {
     snapshot_time    = { hour = 3, minute = 30 }
-    pitr_window_days = 14
+    pitr_window_days = 7
     tiers = [
       { frequency = "daily", interval = 1, retention_value = 7 },
       { frequency = "weekly", interval = 1, retention_value = 4 },
@@ -29,11 +29,18 @@ module "billing" {
   }
 
   users = {
-    app = { roles = [{ role = "readWrite", database = "billing" }] }
+    app = {
+      roles       = [{ role = "readWrite", database = "billing" }]
+      connections = [{ database = "billing" }]
+    }
   }
 }
 
 output "app_password" {
   value     = module.billing.generated_passwords["app"]
   sensitive = true
+}
+
+output "connections" {
+  value = module.billing.connections
 }

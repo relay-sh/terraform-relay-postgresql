@@ -54,6 +54,32 @@ resource "relay_postgresql_user" "this" {
   statement_timeout    = each.value.statement_timeout
 }
 
+resource "relay_connection" "this" {
+  for_each = local.connections
+
+  depends_on = [relay_postgresql_database.this]
+
+  workspace_id        = var.workspace_id
+  name                = each.value.name
+  engine              = "postgres"
+  agent_pool          = each.value.agent_pool
+  managed_database_id = relay_postgresql_cluster.this.id
+  user                = relay_postgresql_user.this[each.value.user].username
+  database            = each.value.database
+
+  audit_enabled       = each.value.audit_enabled
+  redact_enabled      = each.value.redact_enabled
+  policy_fail_mode    = each.value.policy_fail_mode
+  deletion_protection = each.value.deletion_protection
+
+  lifecycle {
+    precondition {
+      condition     = contains(keys(local.databases), each.value.database)
+      error_message = "Connection database ${each.value.database} is not a database of this cluster."
+    }
+  }
+}
+
 resource "relay_backup_schedule" "this" {
   count = var.backup_schedule == null ? 0 : 1
 

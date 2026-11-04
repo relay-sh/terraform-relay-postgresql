@@ -163,7 +163,7 @@ variable "databases" {
 }
 
 variable "users" {
-  description = "PostgreSQL users keyed by username. A user without an entry in user_passwords gets a generated password. A database named in roles is created by the module."
+  description = "PostgreSQL users keyed by username. A user without an entry in user_passwords gets a generated password. A database named in roles is created by the module. connections creates one Relay connection per entry, signed in as that user on the named database, which must be one of the user's role databases (any module database for a user with a role that names none). The name defaults to <cluster>-<user>-<database> with underscores turned into hyphens."
   type = map(object({
     roles = list(object({
       role     = string
@@ -174,8 +174,34 @@ variable "users" {
     expires_at           = optional(string)
     connection_limit     = optional(number)
     statement_timeout    = optional(string)
+    connections = optional(list(object({
+      database            = string
+      name                = optional(string)
+      agent_pool          = optional(string, "default")
+      audit_enabled       = optional(bool)
+      redact_enabled      = optional(bool)
+      policy_fail_mode    = optional(string)
+      deletion_protection = optional(bool)
+    })), [])
   }))
   default = {}
+
+  validation {
+    condition = alltrue(flatten([
+      for u in values(var.users) : [
+        for c in u.connections :
+        anytrue([for r in u.roles : r.database == "" || r.database == c.database])
+      ]
+    ]))
+    error_message = "A connection's database must be one of the user's role databases, unless the user has a role without a database."
+  }
+
+  validation {
+    condition = length(distinct(flatten([
+      for k, u in var.users : [for c in u.connections : "${k}/${c.database}"]
+    ]))) == length(flatten([for u in values(var.users) : u.connections]))
+    error_message = "A user can have only one connection per database."
+  }
 }
 
 variable "user_passwords" {
