@@ -41,3 +41,8 @@ output "generated_passwords" {
   value       = { for name, u in relay_postgresql_user.this : name => u.generated_password if u.generate_password }
   sensitive   = true
 }
+
+output "connections" {
+  description = "Relay connections by \"<user>/<database>\": id and name."
+  value       = { for k, c in relay_connection.this : k => { id = c.id, name = c.name } }
+}

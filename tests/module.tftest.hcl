@@ -19,6 +19,11 @@ mock_provider "relay" {
       generated_password = "generated"
     }
   }
+  mock_resource "relay_connection" {
+    defaults = {
+      id = "conn-1"
+    }
+  }
   mock_resource "relay_backup_schedule" {
     defaults = {
       id               = "db-123"
@@ -346,7 +351,7 @@ run "backup_schedule_with_tiers" {
   variables {
     backup_schedule = {
       snapshot_time    = { hour = 3, minute = 30 }
-      pitr_window_days = 14
+      pitr_window_days = 7
       tiers = [
         { frequency = "daily", interval = 1, retention_value = 7 },
         { frequency = "weekly", interval = 1, retention_value = 4, enabled = true },
@@ -362,7 +367,7 @@ run "backup_schedule_with_tiers" {
   }
 
   assert {
-    condition     = relay_backup_schedule.this[0].snapshot_time.hour == 3 && relay_backup_schedule.this[0].snapshot_time.minute == 30 && relay_backup_schedule.this[0].pitr_window_days == 14
+    condition     = relay_backup_schedule.this[0].snapshot_time.hour == 3 && relay_backup_schedule.this[0].snapshot_time.minute == 30 && relay_backup_schedule.this[0].pitr_window_days == 7
     error_message = "snapshot_time and pitr_window_days pass through"
   }
 
@@ -428,4 +433,113 @@ run "default_connections_pass_through" {
     condition     = relay_postgresql_cluster.this.default_connections.readonly == true && relay_postgresql_cluster.this.default_connections.admin == false
     error_message = "default_connections reaches the cluster"
   }
+}
+
+run "no_connections_by_default" {
+  command = plan
+
+  assert {
+    condition     = length(relay_connection.this) == 0 && length(output.connections) == 0
+    error_message = "no connection is created unless a user asks for one"
+  }
+}
+
+run "user_connections" {
+  command = apply
+
+  variables {
+    users = {
+      app_rw = {
+        roles = [{ role = "readWrite", database = "billing" }, { role = "readOnly", database = "ledger" }]
+        connections = [
+          { database = "billing", audit_enabled = true, redact_enabled = true, policy_fail_mode = "open", deletion_protection = true },
+          { database = "ledger", name = "ledger-ro", agent_pool = "edge" },
+        ]
+      }
+      admin = {
+        roles       = [{ role = "admin" }]
+        connections = [{ database = "billing" }]
+      }
+    }
+    user_passwords = {}
+  }
+
+  assert {
+    condition     = keys(relay_connection.this) == ["admin/billing", "app_rw/billing", "app_rw/ledger"]
+    error_message = "connections are keyed by user and database"
+  }
+
+  assert {
+    condition     = relay_connection.this["app_rw/billing"].name == "billing-app-rw-billing" && relay_connection.this["app_rw/ledger"].name == "ledger-ro"
+    error_message = "the name defaults to cluster-user-database with hyphens, and an explicit name wins"
+  }
+
+  assert {
+    condition     = relay_connection.this["app_rw/billing"].engine == "postgres" && relay_connection.this["app_rw/billing"].managed_database_id == "db-123" && relay_connection.this["app_rw/billing"].user == "app_rw" && relay_connection.this["app_rw/billing"].database == "billing"
+    error_message = "a connection is bound to the cluster, user and database without a host"
+  }
+
+  assert {
+    condition     = relay_connection.this["app_rw/billing"].agent_pool == "default" && relay_connection.this["app_rw/ledger"].agent_pool == "edge"
+    error_message = "agent_pool defaults to the managed agent"
+  }
+
+  assert {
+    condition     = relay_connection.this["app_rw/billing"].audit_enabled == true && relay_connection.this["app_rw/billing"].redact_enabled == true && relay_connection.this["app_rw/billing"].policy_fail_mode == "open" && relay_connection.this["app_rw/billing"].deletion_protection == true
+    error_message = "connection settings pass through"
+  }
+
+  assert {
+    condition     = output.connections["app_rw/ledger"] == { id = "conn-1", name = "ledger-ro" }
+    error_message = "connections are output by key with id and name"
+  }
+}
+
+run "rejects_connection_to_database_outside_roles" {
+  command = plan
+
+  variables {
+    users = {
+      app = {
+        roles       = [{ role = "readWrite", database = "billing" }]
+        connections = [{ database = "ledger" }]
+      }
+    }
+    databases      = { ledger = {} }
+    user_passwords = {}
+  }
+
+  expect_failures = [var.users]
+}
+
+run "rejects_duplicate_connection" {
+  command = plan
+
+  variables {
+    users = {
+      app = {
+        roles       = [{ role = "readWrite", database = "billing" }]
+        connections = [{ database = "billing" }, { database = "billing", name = "second" }]
+      }
+    }
+    user_passwords = {}
+  }
+
+  expect_failures = [var.users]
+}
+
+run "rejects_admin_connection_to_unknown_database" {
+  command = plan
+
+  variables {
+    users = {
+      admin = {
+        roles       = [{ role = "admin" }]
+        connections = [{ database = "nowhere" }]
+      }
+    }
+    user_passwords = {}
+  }
+
+  expect_failures = [relay_connection.this]
 }

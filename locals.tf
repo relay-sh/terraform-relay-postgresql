@@ -34,4 +34,13 @@ locals {
 
   role_databases = toset(flatten([for u in values(var.users) : [for r in u.roles : r.database if r.database != ""]]))
   databases      = merge({ for name in local.role_databases : name => { description = null } }, var.databases)
+
+  connections = merge([
+    for uname, u in var.users : {
+      for c in u.connections : "${uname}/${c.database}" => merge(c, {
+        user = uname
+        name = coalesce(c.name, replace("${var.name}-${uname}-${c.database}", "_", "-"))
+      })
+    }
+  ]...)
 }

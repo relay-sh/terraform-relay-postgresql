@@ -44,6 +44,24 @@ Users get a generated password, exposed once in the sensitive
 `generated_passwords` output and kept in state, unless `user_passwords` has an
 entry for them.
 
+A user can list `connections`, one per database, and the module creates a
+Relay connection for each, signed in as that user. The platform supplies the
+address and credential, so no secret reaches Terraform. The database must be one
+of the user's role databases; a user with a role that names no database (for
+example `admin`) can use any database of the module. The name defaults to
+`<cluster>-<user>-<database>` with `_` turned into `-`. Connections are keyed
+`<user>/<database>` in the `connections` output. This needs provider 0.0.14 or
+later.
+
+```hcl
+users = {
+  app = {
+    roles       = [{ role = "readWrite", database = "billing" }]
+    connections = [{ database = "billing", audit_enabled = true }]
+  }
+}
+```
+
 Backups follow the platform default schedule unless `backup_schedule` is set.
 Removing it later resets the cluster to that default; it does not turn backups
 off. Every enabled tier is rendered into the cluster's backup crons and
@@ -78,6 +96,7 @@ No modules.
 | Name | Type |
 | ---- | ---- |
 | [relay_backup_schedule.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/backup_schedule) | resource |
+| [relay_connection.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/connection) | resource |
 | [relay_postgresql_cluster.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/postgresql_cluster) | resource |
 | [relay_postgresql_database.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/postgresql_database) | resource |
 | [relay_postgresql_user.this](https://registry.terraform.io/providers/relay-sh/relay/latest/docs/resources/postgresql_user) | resource |
@@ -103,13 +122,14 @@ No modules.
 | <a name="input_storage_autoscale"></a> [storage\_autoscale](#input\_storage\_autoscale) | Grows the primary group's volume past its included storage, up to max\_storage, when using size. With nodes, set it per group under resources. | <pre>object({<br/>    enabled           = bool<br/>    threshold_percent = optional(number)<br/>    increase_percent  = optional(number)<br/>    max_storage       = optional(string)<br/>  })</pre> | `null` | no |
 | <a name="input_timeouts"></a> [timeouts](#input\_timeouts) | Create, update and delete timeouts, for example 45m. | <pre>object({<br/>    create = optional(string)<br/>    update = optional(string)<br/>    delete = optional(string)<br/>  })</pre> | `{}` | no |
 | <a name="input_user_passwords"></a> [user\_passwords](#input\_user\_passwords) | Passwords keyed by username, for users that should not get a generated one. | `map(string)` | `{}` | no |
-| <a name="input_users"></a> [users](#input\_users) | PostgreSQL users keyed by username. A user without an entry in user\_passwords gets a generated password. A database named in roles is created by the module. | <pre>map(object({<br/>    roles = list(object({<br/>      role     = string<br/>      database = optional(string, "")<br/>    }))<br/>    description          = optional(string)<br/>    restricted_resources = optional(list(string))<br/>    expires_at           = optional(string)<br/>    connection_limit     = optional(number)<br/>    statement_timeout    = optional(string)<br/>  }))</pre> | `{}` | no |
+| <a name="input_users"></a> [users](#input\_users) | PostgreSQL users keyed by username. A user without an entry in user\_passwords gets a generated password. A database named in roles is created by the module. connections creates one Relay connection per entry, signed in as that user on the named database, which must be one of the user's role databases (any module database for a user with a role that names none). The name defaults to <cluster>-<user>-<database> with underscores turned into hyphens. | <pre>map(object({<br/>    roles = list(object({<br/>      role     = string<br/>      database = optional(string, "")<br/>    }))<br/>    description          = optional(string)<br/>    restricted_resources = optional(list(string))<br/>    expires_at           = optional(string)<br/>    connection_limit     = optional(number)<br/>    statement_timeout    = optional(string)<br/>    connections = optional(list(object({<br/>      database            = string<br/>      name                = optional(string)<br/>      agent_pool          = optional(string, "default")<br/>      audit_enabled       = optional(bool)<br/>      redact_enabled      = optional(bool)<br/>      policy_fail_mode    = optional(string)<br/>      deletion_protection = optional(bool)<br/>    })), [])<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | Cluster ID. |
+| <a name="output_connections"></a> [connections](#output\_connections) | Relay connections by "<user>/<database>": id and name. |
 | <a name="output_databases"></a> [databases](#output\_databases) | Created logical database names. |
 | <a name="output_endpoint"></a> [endpoint](#output\_endpoint) | Primary endpoint. |
 | <a name="output_generated_passwords"></a> [generated\_passwords](#output\_generated\_passwords) | Generated passwords by username. Not recoverable from the API. |
