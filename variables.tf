@@ -44,24 +44,17 @@ variable "region" {
 }
 
 variable "nodes" {
-  description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Use this to set storage above the included size or add extra groups."
+  description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Storage is set for the whole cluster with storage_size and storage_autoscale."
   type = map(object({
     count  = optional(number, 1)
     cloud  = string
     region = string
     tier   = string
-    resources = object({
-      storage    = string
+    resources = optional(object({
       disk_type  = optional(string)
       iops       = optional(number)
       throughput = optional(number)
-      storage_autoscale = optional(object({
-        enabled           = bool
-        threshold_percent = optional(number)
-        increase_percent  = optional(number)
-        max_storage       = optional(string)
-      }))
-    })
+    }), {})
     role = optional(string, "electable")
   }))
   default = null
@@ -72,8 +65,14 @@ variable "nodes" {
   }
 }
 
+variable "storage_size" {
+  description = "Volume size of every node in the cluster, for example 100Gi. Defaults to the included storage of size, or of the largest tier in nodes. It can grow but not shrink."
+  type        = string
+  default     = null
+}
+
 variable "storage_autoscale" {
-  description = "Grows the primary group's volume past its included storage, up to max_storage, when using size. With nodes, set it per group under resources."
+  description = "Grows every node's volume past storage_size, up to max_storage, when disk usage crosses threshold_percent."
   type = object({
     enabled           = bool
     threshold_percent = optional(number)

@@ -3,12 +3,12 @@
 Creates a Relay managed PostgreSQL cluster, the logical databases its users'
 roles name, and the users. A `size`
 catalog tier covers the common single-group shapes; `nodes` takes over when
-you need extra storage or more than one group.
+you need more than one group.
 
 ```hcl
 module "billing" {
   source  = "relay-sh/postgresql/relay"
-  version = "~> 0.0.1"
+  version = "~> 0.1.0"
 
   workspace_id = module.workspace.workspace_id
   name         = "billing"
@@ -37,8 +37,10 @@ module "billing" {
 | R200 | 64   | 256Gi  | 1500Gi           |
 
 CPU and memory are derived from `size` / `nodes.*.tier`. An unknown name is
-rejected. Storage can grow past the included amount via `nodes`, or on its own
-with `storage_autoscale`, up to its `max_storage`.
+rejected. Storage is one size for every node, since every node holds the same
+data: the included storage of `size` (or of the largest tier in `nodes`) unless
+`storage_size` says otherwise. It grows on its own with `storage_autoscale`, up
+to its `max_storage`. Disk type, IOPS and throughput stay per group.
 
 Users get a generated password, exposed once in the sensitive
 `generated_passwords` output and kept in state, unless `user_passwords` has an
@@ -79,13 +81,13 @@ the cluster.
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_relay"></a> [relay](#requirement\_relay) | ~> 0.0.1 |
+| <a name="requirement_relay"></a> [relay](#requirement\_relay) | >= 0.0.1, < 0.2.0 |
 
 ## Providers
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_relay"></a> [relay](#provider\_relay) | ~> 0.0.1 |
+| <a name="provider_relay"></a> [relay](#provider\_relay) | >= 0.0.1, < 0.2.0 |
 
 ## Modules
 
@@ -114,12 +116,13 @@ No modules.
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Major PostgreSQL version. Omit it and the platform picks one. Upgrades go through Relay's upgrade flow, not this variable. | `string` | `null` | no |
 | <a name="input_keep_backups_on_destroy"></a> [keep\_backups\_on\_destroy](#input\_keep\_backups\_on\_destroy) | Keep the cluster's backups when it is destroyed. | `bool` | `false` | no |
 | <a name="input_node_count"></a> [node\_count](#input\_node\_count) | Nodes in the primary group when using size. | `number` | `1` | no |
-| <a name="input_nodes"></a> [nodes](#input\_nodes) | Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Use this to set storage above the included size or add extra groups. | <pre>map(object({<br/>    count  = optional(number, 1)<br/>    cloud  = string<br/>    region = string<br/>    tier   = string<br/>    resources = object({<br/>      storage    = string<br/>      disk_type  = optional(string)<br/>      iops       = optional(number)<br/>      throughput = optional(number)<br/>      storage_autoscale = optional(object({<br/>        enabled           = bool<br/>        threshold_percent = optional(number)<br/>        increase_percent  = optional(number)<br/>        max_storage       = optional(string)<br/>      }))<br/>    })<br/>    role = optional(string, "electable")<br/>  }))</pre> | `null` | no |
+| <a name="input_nodes"></a> [nodes](#input\_nodes) | Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Storage is set for the whole cluster with storage\_size and storage\_autoscale. | <pre>map(object({<br/>    count  = optional(number, 1)<br/>    cloud  = string<br/>    region = string<br/>    tier   = string<br/>    resources = optional(object({<br/>      disk_type  = optional(string)<br/>      iops       = optional(number)<br/>      throughput = optional(number)<br/>    }), {})<br/>    role = optional(string, "electable")<br/>  }))</pre> | `null` | no |
 | <a name="input_parameters"></a> [parameters](#input\_parameters) | PostgreSQL settings. An empty map resets them; null leaves them unmanaged. | `map(string)` | `null` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region for the primary group when using size. | `string` | `null` | no |
 | <a name="input_replication"></a> [replication](#input\_replication) | Commit replication for the cluster. | <pre>object({<br/>    mode                 = string<br/>    synchronous_replicas = optional(number)<br/>  })</pre> | `null` | no |
 | <a name="input_size"></a> [size](#input\_size) | Catalog machine tier (R5–R200). CPU and memory come from the catalog; included storage is the default volume. Set either size or nodes. | `string` | `null` | no |
-| <a name="input_storage_autoscale"></a> [storage\_autoscale](#input\_storage\_autoscale) | Grows the primary group's volume past its included storage, up to max\_storage, when using size. With nodes, set it per group under resources. | <pre>object({<br/>    enabled           = bool<br/>    threshold_percent = optional(number)<br/>    increase_percent  = optional(number)<br/>    max_storage       = optional(string)<br/>  })</pre> | `null` | no |
+| <a name="input_storage_autoscale"></a> [storage\_autoscale](#input\_storage\_autoscale) | Grows every node's volume past storage\_size, up to max\_storage, when disk usage crosses threshold\_percent. | <pre>object({<br/>    enabled           = bool<br/>    threshold_percent = optional(number)<br/>    increase_percent  = optional(number)<br/>    max_storage       = optional(string)<br/>  })</pre> | `null` | no |
+| <a name="input_storage_size"></a> [storage\_size](#input\_storage\_size) | Volume size of every node in the cluster, for example 100Gi. Defaults to the included storage of size, or of the largest tier in nodes. It can grow but not shrink. | `string` | `null` | no |
 | <a name="input_timeouts"></a> [timeouts](#input\_timeouts) | Create, update and delete timeouts, for example 45m. | <pre>object({<br/>    create = optional(string)<br/>    update = optional(string)<br/>    delete = optional(string)<br/>  })</pre> | `{}` | no |
 | <a name="input_user_passwords"></a> [user\_passwords](#input\_user\_passwords) | Passwords keyed by username, for users that should not get a generated one. | `map(string)` | `{}` | no |
 | <a name="input_users"></a> [users](#input\_users) | PostgreSQL users keyed by username. A user without an entry in user\_passwords gets a generated password. A database named in roles is created by the module. connections creates one Relay connection per entry, signed in as that user on the named database, which must be one of the user's role databases (any module database for a user with a role that names none). The name defaults to <cluster>-<user>-<database> with underscores turned into hyphens. | <pre>map(object({<br/>    roles = list(object({<br/>      role     = string<br/>      database = optional(string, "")<br/>    }))<br/>    description          = optional(string)<br/>    restricted_resources = optional(list(string))<br/>    expires_at           = optional(string)<br/>    connection_limit     = optional(number)<br/>    statement_timeout    = optional(string)<br/>    connections = optional(list(object({<br/>      database            = string<br/>      name                = optional(string)<br/>      agent_pool          = optional(string, "default")<br/>      audit_enabled       = optional(bool)<br/>      redact_enabled      = optional(bool)<br/>      policy_fail_mode    = optional(string)<br/>      deletion_protection = optional(bool)<br/>    })), [])<br/>  }))</pre> | `{}` | no |
