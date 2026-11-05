@@ -559,3 +559,25 @@ run "rejects_admin_connection_to_unknown_database" {
 
   expect_failures = [relay_connection.this]
 }
+
+run "no_deletion_protection_by_default" {
+  command = plan
+
+  assert {
+    condition     = relay_postgresql_cluster.this.deletion_protection == false
+    error_message = "deletion protection is off by default"
+  }
+}
+
+run "deletion_protection_passes_through" {
+  command = plan
+
+  variables {
+    deletion_protection = true
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.deletion_protection == true
+    error_message = "deletion_protection reaches the cluster"
+  }
+}

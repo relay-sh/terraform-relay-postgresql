@@ -12,6 +12,7 @@ resource "relay_postgresql_cluster" "this" {
   }
 
   keep_backups_on_destroy = var.keep_backups_on_destroy
+  deletion_protection     = var.deletion_protection
   default_connections     = var.default_connections
 
   timeouts {
