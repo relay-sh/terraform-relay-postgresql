@@ -1,8 +1,8 @@
-## Unreleased
+## 0.0.3 (November 4, 2026)
 
 ENHANCEMENTS:
 
-* `users[*].connections` creates a Relay connection per user and database through `relay_connection`, exposed in the `connections` output. It needs provider 0.0.14 or later.
+* `users[*].connections` creates a Relay connection per user and database through `relay_connection`, exposed in the `connections` output. It needs provider 0.0.14 or later ([#17](https://github.com/relay-sh/terraform-relay-postgresql/pull/17))
 
 ## 0.0.2 (November 3, 2026)
 
