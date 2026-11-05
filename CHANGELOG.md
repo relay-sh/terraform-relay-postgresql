@@ -1,3 +1,9 @@
+## 0.1.1 (November 5, 2026)
+
+ENHANCEMENTS:
+
+* `deletion_protection` makes the platform refuse to delete the cluster ([#20](https://github.com/relay-sh/terraform-relay-postgresql/pull/20))
+
 ## 0.1.0 (November 4, 2026)
 
 BREAKING CHANGES:

@@ -143,6 +143,12 @@ variable "keep_backups_on_destroy" {
   default     = false
 }
 
+variable "deletion_protection" {
+  description = "While true, the platform refuses to delete the cluster, and a destroy or a replacement fails before deleting it."
+  type        = bool
+  default     = false
+}
+
 variable "timeouts" {
   description = "Create, update and delete timeouts, for example 45m."
   type = object({
