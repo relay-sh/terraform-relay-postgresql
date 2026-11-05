@@ -58,7 +58,7 @@ run "size_preset_and_users" {
   }
 
   assert {
-    condition     = relay_postgresql_cluster.this.nodes["primary"].tier == "R30" && relay_postgresql_cluster.this.nodes["primary"].resources.storage == "40Gi"
+    condition     = relay_postgresql_cluster.this.nodes["primary"].tier == "R30" && relay_postgresql_cluster.this.storage.size == "40Gi"
     error_message = "size R30 maps to catalog included storage"
   }
 
@@ -137,9 +137,6 @@ run "explicit_nodes" {
         cloud  = "gcp"
         region = "us-central1"
         tier   = "R20"
-        resources = {
-          storage = "40Gi"
-        }
       }
     }
     users          = {}
@@ -158,11 +155,10 @@ run "rejects_size_and_nodes" {
   variables {
     nodes = {
       primary = {
-        count     = 1
-        cloud     = "aws"
-        region    = "us-east-1"
-        tier      = "R10"
-        resources = { storage = "10Gi" }
+        count  = 1
+        cloud  = "aws"
+        region = "us-east-1"
+        tier   = "R10"
       }
     }
   }
@@ -210,27 +206,24 @@ run "node_roles" {
     region = null
     nodes = {
       writers = {
-        count     = 2
-        cloud     = "aws"
-        region    = "us-east-1"
-        tier      = "R20"
-        resources = { storage = "40Gi" }
+        count  = 2
+        cloud  = "aws"
+        region = "us-east-1"
+        tier   = "R20"
       }
       readers = {
-        count     = 1
-        cloud     = "aws"
-        region    = "us-east-1"
-        tier      = "R10"
-        resources = { storage = "10Gi" }
-        role      = "read_only"
+        count  = 1
+        cloud  = "aws"
+        region = "us-east-1"
+        tier   = "R10"
+        role   = "read_only"
       }
       dr = {
-        count     = 1
-        cloud     = "aws"
-        region    = "us-east-1"
-        tier      = "R10"
-        resources = { storage = "10Gi" }
-        role      = "standby"
+        count  = 1
+        cloud  = "aws"
+        region = "us-east-1"
+        tier   = "R10"
+        role   = "standby"
       }
     }
     users          = {}
@@ -252,11 +245,10 @@ run "rejects_unknown_role" {
     region = null
     nodes = {
       primary = {
-        cloud     = "aws"
-        region    = "us-east-1"
-        tier      = "R10"
-        resources = { storage = "10Gi" }
-        role      = "data"
+        cloud  = "aws"
+        region = "us-east-1"
+        tier   = "R10"
+        role   = "data"
       }
     }
   }
@@ -284,12 +276,12 @@ run "storage_autoscale_with_size" {
   }
 
   assert {
-    condition     = relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale.enabled && relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale.max_storage == "200Gi"
-    error_message = "storage_autoscale reaches the size preset group"
+    condition     = relay_postgresql_cluster.this.storage.autoscale.enabled && relay_postgresql_cluster.this.storage.autoscale.max_storage == "200Gi" && relay_postgresql_cluster.this.storage.size == "40Gi"
+    error_message = "storage_autoscale applies to the cluster"
   }
 }
 
-run "storage_autoscale_per_group" {
+run "storage_with_nodes" {
   command = apply
 
   variables {
@@ -298,22 +290,46 @@ run "storage_autoscale_per_group" {
     region = null
     nodes = {
       primary = {
+        cloud     = "aws"
+        region    = "us-east-1"
+        tier      = "R10"
+        resources = { disk_type = "gp3" }
+      }
+      readers = {
         cloud  = "aws"
         region = "us-east-1"
-        tier   = "R20"
-        resources = {
-          storage           = "40Gi"
-          storage_autoscale = { enabled = true, threshold_percent = 85, max_storage = "400Gi" }
-        }
+        tier   = "R30"
+        role   = "read_only"
       }
     }
+    storage_autoscale = { enabled = true, threshold_percent = 85, max_storage = "400Gi" }
+    users             = {}
+    user_passwords    = {}
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.storage.size == "40Gi"
+    error_message = "storage defaults to the largest included storage among the groups' tiers"
+  }
+
+  assert {
+    condition     = relay_postgresql_cluster.this.storage.autoscale.threshold_percent == 85 && relay_postgresql_cluster.this.nodes["primary"].resources.disk_type == "gp3"
+    error_message = "storage_autoscale applies to the cluster and disk attributes stay per group"
+  }
+}
+
+run "explicit_storage_size" {
+  command = apply
+
+  variables {
+    storage_size   = "250Gi"
     users          = {}
     user_passwords = {}
   }
 
   assert {
-    condition     = relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale.threshold_percent == 85
-    error_message = "storage_autoscale passes through on explicit nodes"
+    condition     = relay_postgresql_cluster.this.storage.size == "250Gi"
+    error_message = "storage_size overrides the included storage"
   }
 }
 
@@ -326,7 +342,7 @@ run "no_storage_autoscale_by_default" {
   }
 
   assert {
-    condition     = relay_postgresql_cluster.this.nodes["primary"].resources.storage_autoscale == null
+    condition     = relay_postgresql_cluster.this.storage.autoscale == null
     error_message = "storage_autoscale stays off unless asked for"
   }
 }

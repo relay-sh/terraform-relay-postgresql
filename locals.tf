@@ -19,16 +19,15 @@ locals {
       region = var.region
       tier   = var.size
       resources = {
-        storage    = local.included_storage[var.size]
         disk_type  = null
         iops       = null
         throughput = null
-
-        storage_autoscale = var.storage_autoscale
       }
       role = "electable"
     }
   }
+
+  storage_size = coalesce(var.storage_size, "${max([for n in values(local.nodes) : tonumber(trimsuffix(local.included_storage[n.tier], "Gi"))]...)}Gi")
 
   password_users = toset(nonsensitive(keys(var.user_passwords)))
 

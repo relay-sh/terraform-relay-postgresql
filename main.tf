@@ -6,6 +6,11 @@ resource "relay_postgresql_cluster" "this" {
   parameters   = var.parameters
   replication  = var.replication
 
+  storage = {
+    size      = local.storage_size
+    autoscale = var.storage_autoscale
+  }
+
   keep_backups_on_destroy = var.keep_backups_on_destroy
   default_connections     = var.default_connections
 
