@@ -1,3 +1,9 @@
+## 0.1.2 (November 7, 2026)
+
+ENHANCEMENTS:
+
+* `nodes.*.autoscaling` moves a group one tier at a time between `min_tier` and `max_tier`, with optional `rules`, `scale_up_window`, `scale_down_window` and `respect_maintenance_window`. Needs provider 0.1.1
+
 ## 0.1.1 (November 5, 2026)
 
 ENHANCEMENTS:

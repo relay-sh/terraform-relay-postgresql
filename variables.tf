@@ -44,7 +44,7 @@ variable "region" {
 }
 
 variable "nodes" {
-  description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Storage is set for the whole cluster with storage_size and storage_autoscale."
+  description = "Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Storage is set for the whole cluster with storage_size and storage_autoscale. `autoscaling` moves a group one tier at a time between min_tier and max_tier; without rules the Relay default policy applies."
   type = map(object({
     count  = optional(number, 1)
     cloud  = string
@@ -56,12 +56,55 @@ variable "nodes" {
       throughput = optional(number)
     }), {})
     role = optional(string, "electable")
+    autoscaling = optional(object({
+      enabled  = bool
+      min_tier = optional(string)
+      max_tier = optional(string)
+      rules = optional(list(object({
+        metric           = string
+        scale_up_above   = number
+        scale_down_below = number
+      })))
+      scale_up_window            = optional(string)
+      scale_down_window          = optional(string)
+      respect_maintenance_window = optional(bool)
+    }))
   }))
   default = null
 
   validation {
     condition     = var.nodes == null || alltrue([for n in values(coalesce(var.nodes, {})) : contains(["electable", "standby", "read_only"], n.role)])
     error_message = "node role must be electable, standby or read_only."
+  }
+
+  validation {
+    condition     = alltrue([for a in [for n in values(coalesce(var.nodes, {})) : n.autoscaling if n.autoscaling != null] : a.min_tier != null && a.max_tier != null if a.enabled])
+    error_message = "nodes.*.autoscaling needs min_tier and max_tier when enabled."
+  }
+
+  validation {
+    condition     = alltrue([for n in values(coalesce(var.nodes, {})) : length(n.autoscaling.rules) <= 8 if n.autoscaling != null && try(n.autoscaling.rules != null, false)])
+    error_message = "nodes.*.autoscaling.rules takes at most 8 rules."
+  }
+
+  validation {
+    condition = alltrue(flatten([for n in values(coalesce(var.nodes, {})) : [
+      for r in n.autoscaling.rules : r.scale_down_below >= 0 && r.scale_down_below < r.scale_up_above
+    ] if n.autoscaling != null && try(n.autoscaling.rules != null, false)]))
+    error_message = "nodes.*.autoscaling.rules need 0 <= scale_down_below < scale_up_above."
+  }
+
+  validation {
+    condition = alltrue([for n in values(coalesce(var.nodes, {})) : length(distinct(n.autoscaling.rules[*].metric)) == length(n.autoscaling.rules)
+    if n.autoscaling != null && try(n.autoscaling.rules != null, false)])
+    error_message = "nodes.*.autoscaling.rules name each metric once."
+  }
+
+  validation {
+    condition = alltrue(flatten([for n in values(coalesce(var.nodes, {})) : [
+      for w in [n.autoscaling.scale_up_window, n.autoscaling.scale_down_window] : can(regex("^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$", w)) && can(regex("[1-9]", w)) if w != null
+    ] if n.autoscaling != null]))
+    error_message = "nodes.*.autoscaling.scale_up_window and scale_down_window are positive durations such as 5m or 1h30m."
   }
 }
 
