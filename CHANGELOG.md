@@ -2,7 +2,7 @@
 
 ENHANCEMENTS:
 
-* `nodes.*.autoscaling` moves a group one tier at a time between `min_tier` and `max_tier`, with optional `rules`, `scale_up_window`, `scale_down_window` and `respect_maintenance_window`. Needs provider 0.1.1
+* `nodes.*.autoscaling` moves a group one tier at a time between `min_tier` and `max_tier`, with optional `rules`, `scale_up_window`, `scale_down_window` and `respect_maintenance_window`. Needs provider 0.1.1 ([#21](https://github.com/relay-sh/terraform-relay-postgresql/pull/21))
 
 ## 0.1.1 (November 5, 2026)
 
