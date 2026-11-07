@@ -42,6 +42,29 @@ data: the included storage of `size` (or of the largest tier in `nodes`) unless
 `storage_size` says otherwise. It grows on its own with `storage_autoscale`, up
 to its `max_storage`. Disk type, IOPS and throughput stay per group.
 
+A group in `nodes` can autoscale its compute: `autoscaling` moves it one tier
+at a time between `min_tier` and `max_tier`, and the node count never changes.
+Without `rules` the Relay default policy applies. `tier` stays the configured
+value, so a move never shows as a plan diff; the cluster's
+`nodes["<group>"].current_tier` reports the tier the group runs at. This needs
+provider 0.1.1 or later, the `compute_autoscale` feature and a paid plan.
+
+```hcl
+nodes = {
+  primary = {
+    cloud  = "aws"
+    region = "us-east-1"
+    tier   = "R30"
+    autoscaling = {
+      enabled  = true
+      min_tier = "R20"
+      max_tier = "R50"
+      rules    = [{ metric = "cpu", scale_up_above = 75, scale_down_below = 30 }]
+    }
+  }
+}
+```
+
 Users get a generated password, exposed once in the sensitive
 `generated_passwords` output and kept in state, unless `user_passwords` has an
 entry for them.
@@ -117,7 +140,7 @@ No modules.
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Major PostgreSQL version. Omit it and the platform picks one. Upgrades go through Relay's upgrade flow, not this variable. | `string` | `null` | no |
 | <a name="input_keep_backups_on_destroy"></a> [keep\_backups\_on\_destroy](#input\_keep\_backups\_on\_destroy) | Keep the cluster's backups when it is destroyed. | `bool` | `false` | no |
 | <a name="input_node_count"></a> [node\_count](#input\_node\_count) | Nodes in the primary group when using size. | `number` | `1` | no |
-| <a name="input_nodes"></a> [nodes](#input\_nodes) | Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Storage is set for the whole cluster with storage\_size and storage\_autoscale. | <pre>map(object({<br/>    count  = optional(number, 1)<br/>    cloud  = string<br/>    region = string<br/>    tier   = string<br/>    resources = optional(object({<br/>      disk_type  = optional(string)<br/>      iops       = optional(number)<br/>      throughput = optional(number)<br/>    }), {})<br/>    role = optional(string, "electable")<br/>  }))</pre> | `null` | no |
+| <a name="input_nodes"></a> [nodes](#input\_nodes) | Explicit node groups keyed by group name. Each group names a catalog tier; CPU and memory are derived. A group is `electable` unless it is set to `standby`, which keeps it out of the synchronous commit path, or `read_only`, which also keeps it out of elections. Storage is set for the whole cluster with storage\_size and storage\_autoscale. `autoscaling` moves a group one tier at a time between min\_tier and max\_tier; without rules the Relay default policy applies. | <pre>map(object({<br/>    count  = optional(number, 1)<br/>    cloud  = string<br/>    region = string<br/>    tier   = string<br/>    resources = optional(object({<br/>      disk_type  = optional(string)<br/>      iops       = optional(number)<br/>      throughput = optional(number)<br/>    }), {})<br/>    role = optional(string, "electable")<br/>    autoscaling = optional(object({<br/>      enabled  = bool<br/>      min_tier = optional(string)<br/>      max_tier = optional(string)<br/>      rules = optional(list(object({<br/>        metric           = string<br/>        scale_up_above   = number<br/>        scale_down_below = number<br/>      })))<br/>      scale_up_window            = optional(string)<br/>      scale_down_window          = optional(string)<br/>      respect_maintenance_window = optional(bool)<br/>    }))<br/>  }))</pre> | `null` | no |
 | <a name="input_parameters"></a> [parameters](#input\_parameters) | PostgreSQL settings. An empty map resets them; null leaves them unmanaged. | `map(string)` | `null` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region for the primary group when using size. | `string` | `null` | no |
 | <a name="input_replication"></a> [replication](#input\_replication) | Commit replication for the cluster. | <pre>object({<br/>    mode                 = string<br/>    synchronous_replicas = optional(number)<br/>  })</pre> | `null` | no |

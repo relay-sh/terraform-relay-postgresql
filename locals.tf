@@ -23,7 +23,8 @@ locals {
         iops       = null
         throughput = null
       }
-      role = "electable"
+      role        = "electable"
+      autoscaling = null
     }
   }
 
